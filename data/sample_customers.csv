@@ -1,0 +1,11 @@
+CustomerID,CartValue,TimeSpent,CouponUsed,Status
+C101,4999,780,False,Abandoned
+C102,899,300,True,Recovered
+C103,2499,520,False,Pending
+C104,6999,1100,False,Abandoned
+C105,1299,240,True,Recovered
+C106,3599,670,False,Pending
+C107,5200,910,False,Abandoned
+C108,799,180,True,Recovered
+C109,2899,470,False,Pending
+C110,4500,830,False,Abandoned
