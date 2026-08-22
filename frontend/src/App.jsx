@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
@@ -9,16 +9,14 @@ import Settings from "./pages/Settings";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/customers" element={<Customers />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/recovery" element={<Recovery />} />
-        <Route path="/campaigns" element={<Campaigns />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/customers" element={<Customers />} />
+      <Route path="/analytics" element={<Analytics />} />
+      <Route path="/recovery" element={<Recovery />} />
+      <Route path="/campaigns" element={<Campaigns />} />
+      <Route path="/settings" element={<Settings />} />
+    </Routes>
   );
 }
 

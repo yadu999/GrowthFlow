@@ -33,6 +33,7 @@ export default function Dashboard() {
     recovered: 37,
   });
 
+  // Live dashboard animation
   useEffect(() => {
     const timer = setInterval(() => {
       setMetrics((prev) => ({
@@ -54,6 +55,7 @@ export default function Dashboard() {
     setStep(-1);
   };
 
+  // Analyze current customer
   const analyze = async () => {
     setLoading(true);
     setResult(null);
@@ -91,6 +93,7 @@ export default function Dashboard() {
     }
   };
 
+  // Demo Mode
   const demoMode = async () => {
     for (let i = 0; i < customers.length; i++) {
       setIndex(i);
@@ -120,6 +123,9 @@ export default function Dashboard() {
       const data = await res.json();
 
       setResult(data);
+      toast.success(
+`Recovered ₹${current.cart.toLocaleString("en-IN")} cart`
+);
       setStep(4);
 
       await new Promise((r) => setTimeout(r, 2500));
@@ -140,7 +146,7 @@ export default function Dashboard() {
         {/* Hero */}
         <div className="flex justify-between items-center flex-wrap gap-6">
           <div>
-            <h1 className="text-5xl md:text-6xl font-black bg-gradient-to-r from-white via-violet-300 to-fuchsia-400 bg-clip-text text-transparent">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black bg-gradient-to-r from-white via-violet-300 to-fuchsia-400 bg-clip-text text-transparent">
               GrowthFlow AI
             </h1>
 
@@ -164,8 +170,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex flex-wrap gap-4">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={demoMode}
             className="px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:scale-105 transition font-semibold shadow-lg"
@@ -181,7 +187,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Metrics */}
+        {/* Live Metrics */}
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
           <MetricCard
             title="Revenue Today"
@@ -211,8 +217,8 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Merchant + Analysis */}
-        <div className="grid xl:grid-cols-2 gap-8">
+        {/* Merchant + AI Analysis */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <div className="space-y-5">
             <MerchantCard customer={customer} onNext={nextCustomer} />
 
@@ -225,32 +231,33 @@ export default function Dashboard() {
             </button>
           </div>
 
-          <AnalysisPanel result={result} />
+          <AnalysisPanel result={result} loading={loading} />
         </div>
 
-        {/* Workflow + Table */}
-        <div className="grid xl:grid-cols-2 gap-8">
+        {/* Workflow + Customer Activity */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <AgentTimeline step={step} />
           <CustomerTable />
         </div>
 
-        {/* Revenue + Feed */}
-        <div className="grid xl:grid-cols-2 gap-8">
+        {/* Revenue + Live Feed */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <RevenueChart />
           <LiveFeed />
         </div>
       </div>
 
-      {/* Floating Copilot */}
+      {/* Floating AI Assistant */}
       <button
         onClick={() => setCopilotOpen(!copilotOpen)}
-        className="fixed bottom-8 right-8 w-16 h-16 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-2xl text-3xl hover:scale-110 transition z-50"
+        className="fixed bottom-5 right-5 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-2xl text-2xl md:text-3xl hover:scale-110 transition z-50"
       >
         🤖
       </button>
 
+      {/* Slide-out Copilot */}
       <div
-        className={`fixed bottom-28 right-8 w-[380px] max-w-[90vw] transition-all duration-300 z-40 ${
+        className={`fixed bottom-24 right-5 md:bottom-28 md:right-8 w-[90vw] max-w-[380px] transition-all duration-300 z-40 ${
           copilotOpen
             ? "opacity-100 translate-y-0"
             : "opacity-0 translate-y-10 pointer-events-none"
