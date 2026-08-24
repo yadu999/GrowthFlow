@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "react-hot-toast";
+import { Play, Workflow, Activity } from "lucide-react";
 
 import Layout from "../components/Layout";
 import MetricCard from "../components/MetricCard";
@@ -7,12 +9,16 @@ import AnalysisPanel from "../components/AnalysisPanel";
 import CustomerTable from "../components/CustomerTable";
 import AgentTimeline from "../components/AgentTimeline";
 import MerchantCard, { customers } from "../components/MerchantCard";
-import CopilotPanel from "../components/CopilotPanel";
 import LiveFeed from "../components/LiveFeed";
+import CopilotPanel from "../components/CopilotPanel";
 
 export default function Dashboard() {
   const [index, setIndex] = useState(0);
   const [copilotOpen, setCopilotOpen] = useState(false);
+
+  const workflowRef = useRef(null);
+  const revenueRef = useRef(null);
+  const customerRef = useRef(null);
 
   const customer = customers[index];
 
@@ -33,7 +39,40 @@ export default function Dashboard() {
     recovered: 37,
   });
 
-  // Live dashboard animation
+  /* ---------------- COPILOT ---------------- */
+
+  useEffect(() => {
+    const handler = () => setCopilotOpen((prev) => !prev);
+
+    window.addEventListener("toggle-copilot", handler);
+
+    return () =>
+      window.removeEventListener("toggle-copilot", handler);
+  }, []);
+
+  /* ---------------- KEYBOARD SHORTCUTS ---------------- */
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key.toLowerCase() === "n") nextCustomer();
+
+      if (e.key.toLowerCase() === "c")
+        window.dispatchEvent(new Event("toggle-copilot"));
+
+      if (e.key === "Escape") {
+        setResult(null);
+        setStep(-1);
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+
+    return () =>
+      window.removeEventListener("keydown", handler);
+  }, []);
+
+  /* ---------------- LIVE METRICS ---------------- */
+
   useEffect(() => {
     const timer = setInterval(() => {
       setMetrics((prev) => ({
@@ -49,23 +88,24 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, []);
 
+  /* ---------------- ACTIONS ---------------- */
+
   const nextCustomer = () => {
     setIndex((prev) => (prev + 1) % customers.length);
     setResult(null);
     setStep(-1);
   };
 
-  // Analyze current customer
   const analyze = async () => {
     setLoading(true);
     setResult(null);
     setStep(0);
 
     try {
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 500));
       setStep(1);
 
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 500));
       setStep(2);
 
       const res = await fetch("http://localhost:8000/analyze", {
@@ -76,195 +116,362 @@ export default function Dashboard() {
         body: JSON.stringify(form),
       });
 
-      if (!res.ok) {
-        throw new Error(`Backend returned ${res.status}`);
-      }
+      if (!res.ok) throw new Error();
 
       const data = await res.json();
 
-      setStep(3);
       setResult(data);
+      setStep(4);
+
+      toast.success(
+        `Workflow generated for ₹${customer.cart.toLocaleString("en-IN")}`
+      );
     } catch (err) {
       console.error(err);
       setStep(-1);
-      alert("Failed to contact backend.");
+      toast.error("Backend connection failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // Demo Mode
   const demoMode = async () => {
-    for (let i = 0; i < customers.length; i++) {
-      setIndex(i);
+    toast.loading("Running demo...", { id: "demo" });
+
+    for (const current of customers) {
+      setIndex(customers.indexOf(current));
       setResult(null);
       setStep(0);
 
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 500));
       setStep(1);
 
-      await new Promise((r) => setTimeout(r, 600));
+      await new Promise((r) => setTimeout(r, 500));
       setStep(2);
 
-      const current = customers[i];
+      try {
+        const res = await fetch("http://localhost:8000/analyze", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            cart_value: current.cart,
+            time_spent: current.time,
+            coupon_used: current.coupon,
+          }),
+        });
 
-      const res = await fetch("http://localhost:8000/analyze", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          cart_value: current.cart,
-          time_spent: current.time,
-          coupon_used: current.coupon,
-        }),
-      });
+        const data = await res.json();
 
-      const data = await res.json();
+        setResult(data);
+        setStep(4);
 
-      setResult(data);
-      toast.success(
-`Recovered ₹${current.cart.toLocaleString("en-IN")} cart`
-);
-      setStep(4);
+        toast.success(
+          `Recovered ₹${current.cart.toLocaleString("en-IN")}`,
+          { id: "demo" }
+        );
+      } catch {
+        toast.error("Demo failed", { id: "demo" });
+      }
 
-      await new Promise((r) => setTimeout(r, 2500));
+      await new Promise((r) => setTimeout(r, 2200));
     }
 
-    setStep(-1);
+    toast.success("Demo completed", { id: "demo" });
   };
 
   return (
     <Layout>
-      {/* Background Glow */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-48 -left-40 w-[420px] h-[420px] rounded-full bg-violet-600/20 blur-[140px]" />
-        <div className="absolute bottom-0 right-0 w-[520px] h-[520px] rounded-full bg-fuchsia-600/15 blur-[160px]" />
-      </div>
+      <div className="space-y-10">
 
-      <div className="space-y-8">
-        {/* Hero */}
-        <div className="flex justify-between items-center flex-wrap gap-6">
-          <div>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-black bg-gradient-to-r from-white via-violet-300 to-fuchsia-400 bg-clip-text text-transparent">
-              GrowthFlow AI
+        {/* HERO */}
+
+        <section className="grid xl:grid-cols-[1.6fr_0.8fr] gap-8 items-center">
+
+          <div className="space-y-5">
+
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-surface text-sm text-muted">
+              <span className="w-2 h-2 rounded-full bg-success"></span>
+              Commerce Platform
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+              Commerce Overview
             </h1>
 
-            <p className="text-gray-400 mt-3 text-lg">
-              Autonomous Commerce Growth Agent
+            <p className="text-muted max-w-2xl text-lg leading-relaxed">
+              Monitor customer journeys, recover abandoned carts,
+              and automate commerce workflows from one dashboard.
             </p>
 
-            <p className="text-gray-500 mt-1 max-w-2xl">
-              Analyze customer behavior, predict purchase intent, and recover
-              abandoned carts using AI-powered offers and merchant automation.
-            </p>
-          </div>
+            <div className="flex flex-wrap gap-3 pt-2">
 
-          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 backdrop-blur-xl">
-            <p className="text-gray-500 text-sm">Live AI Engine</p>
+              <button
+                onClick={demoMode}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white text-black font-medium hover:bg-slate-100 transition"
+              >
+                <Play size={18}/>
+                Run Demo
+              </button>
 
-            <div className="flex items-center gap-2 mt-2">
-              <span className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
-              <span className="font-medium">Online • Mumbai</span>
+              <button
+                onClick={() =>
+                  workflowRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  })
+                }
+                className="flex items-center gap-2 px-5 py-3 rounded-xl bg-surface border border-border hover:border-slate-500 transition"
+              >
+                <Workflow size={18}/>
+                View Workflows
+              </button>
+
+              <button
+                onClick={nextCustomer}
+                className="px-5 py-3 rounded-xl bg-surface border border-border hover:border-slate-500 transition"
+              >
+                Next Customer
+              </button>
+
             </div>
+
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={demoMode}
-            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:scale-105 transition font-semibold shadow-lg"
-          >
-            ▶ Demo Mode
-          </button>
+          {/* STATUS CARD */}
 
-          <button
-            onClick={nextCustomer}
-            className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-violet-500 transition backdrop-blur-xl"
-          >
-            Next Customer
-          </button>
-        </div>
+          <div className="bg-surface border border-border rounded-2xl p-6">
 
-        {/* Live Metrics */}
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
+            <p className="text-sm text-muted">
+              Real-Time Engine
+            </p>
+
+            <div className="flex items-center gap-3 mt-5">
+
+              <span className="w-3 h-3 rounded-full bg-success animate-pulse"></span>
+
+              <div>
+
+                <p className="font-semibold">
+                  Operational
+                </p>
+
+                <p className="text-sm text-muted">
+                  Processing commerce workflows in real time.
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="mt-6 pt-5 border-t border-border space-y-3">
+
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">Workflows today</span>
+                <span className="font-semibold">1,284</span>
+              </div>
+
+              <div className="flex justify-between text-sm">
+                <span className="text-muted">Response time</span>
+                <span className="font-semibold">142 ms</span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* METRICS */}
+
+        <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-5">
+
           <MetricCard
             title="Revenue Today"
             value={`₹${metrics.revenue.toLocaleString("en-IN")}`}
-            change="+18% vs yesterday"
+            change="+18% this week"
+            onClick={() =>
+              revenueRef.current?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
           />
 
           <MetricCard
             title="Conversion Rate"
             value={`${metrics.conversion}%`}
             change="+1.2%"
-            color="text-green-400"
+            color="text-white"
+            onClick={() =>
+              customerRef.current?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
           />
 
           <MetricCard
             title="Abandoned Carts"
             value={metrics.abandoned}
             change="Live tracking"
-            color="text-yellow-400"
+            color="text-white"
+            onClick={() =>
+              workflowRef.current?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
           />
 
           <MetricCard
-            title="AI Recovery Rate"
+            title="Recovery Rate"
             value={`${metrics.recovered}%`}
             change="+12%"
-            color="text-purple-400"
+            color="text-white"
+            onClick={() =>
+              workflowRef.current?.scrollIntoView({
+                behavior: "smooth",
+              })
+            }
           />
-        </div>
 
-        {/* Merchant + AI Analysis */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+        </section>
+
+        {/* MERCHANT + ANALYSIS */}
+
+        <section
+          ref={workflowRef}
+          className="grid xl:grid-cols-2 gap-8 items-start"
+        >
+
           <div className="space-y-5">
-            <MerchantCard customer={customer} onNext={nextCustomer} />
+
+            <MerchantCard
+              customer={customer}
+              onNext={nextCustomer}
+            />
 
             <button
               onClick={analyze}
               disabled={loading}
-              className="w-full rounded-2xl py-4 text-lg font-semibold bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:opacity-90 disabled:opacity-50 transition"
+              className="w-full rounded-xl py-4 bg-white text-black font-semibold hover:bg-slate-100 disabled:opacity-50 transition"
             >
-              {loading ? "AI is analyzing..." : "Analyze Customer"}
+              {loading ? "Generating Workflow..." : "Generate Workflow"}
             </button>
+
           </div>
 
-          <AnalysisPanel result={result} loading={loading} />
-        </div>
+          <AnalysisPanel
+            result={result}
+            loading={loading}
+          />
 
-        {/* Workflow + Customer Activity */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <AgentTimeline step={step} />
-          <CustomerTable />
-        </div>
+        </section>
 
-        {/* Revenue + Live Feed */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          <RevenueChart />
-          <LiveFeed />
-        </div>
+        {/* WORKFLOW + CUSTOMERS */}
+
+        <section
+          ref={customerRef}
+          className="grid xl:grid-cols-2 gap-8 items-start"
+        >
+
+          <AgentTimeline step={step}/>
+
+          <CustomerTable/>
+
+        </section>
+
+        {/* REVENUE */}
+
+        <section
+          ref={revenueRef}
+          className="grid xl:grid-cols-2 gap-8 items-start"
+        >
+
+          <RevenueChart/>
+
+          <LiveFeed/>
+
+        </section>
+
+        {/* ACTIVITY */}
+
+        <section className="rounded-2xl border border-border bg-surface p-6">
+
+          <div className="flex items-center gap-2 mb-6">
+
+            <Activity size={20}/>
+
+            <h2 className="text-xl font-semibold">
+              Commerce Activity
+            </h2>
+
+          </div>
+
+          <div className="space-y-4">
+
+            {[
+              {
+                title: "Recovery workflow generated",
+                time: "2 min ago",
+              },
+              {
+                title: "Customer intent updated",
+                time: "8 min ago",
+              },
+              {
+                title: "Campaign automation executed",
+                time: "14 min ago",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between py-4 border-b border-border last:border-none"
+              >
+
+                <div>
+
+                  <p className="font-medium">
+                    {item.title}
+                  </p>
+
+                  <p className="text-sm text-muted">
+                    {item.time}
+                  </p>
+
+                </div>
+
+                <button
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new Event("toggle-copilot")
+                    )
+                  }
+                  className="px-4 py-2 rounded-lg border border-border hover:bg-surface-secondary transition text-sm"
+                >
+                  View Workflow
+                </button>
+
+              </div>
+            ))}
+
+          </div>
+
+        </section>
+
       </div>
 
-      {/* Floating AI Assistant */}
-      <button
-        onClick={() => setCopilotOpen(!copilotOpen)}
-        className="fixed bottom-5 right-5 md:bottom-8 md:right-8 w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 shadow-2xl text-2xl md:text-3xl hover:scale-110 transition z-50"
-      >
-        🤖
-      </button>
+      {/* COPILOT */}
 
-      {/* Slide-out Copilot */}
       <div
-        className={`fixed bottom-24 right-5 md:bottom-28 md:right-8 w-[90vw] max-w-[380px] transition-all duration-300 z-40 ${
-          copilotOpen
-            ? "opacity-100 translate-y-0"
-            : "opacity-0 translate-y-10 pointer-events-none"
-        }`}
+        className={`fixed top-20 right-0 h-[calc(100vh-80px)] w-[380px] max-w-[90vw]
+        bg-surface border-l border-border transition-transform duration-300 z-40
+        ${copilotOpen ? "translate-x-0" : "translate-x-full"}`}
       >
-        <CopilotPanel />
+
+        <CopilotPanel/>
+
       </div>
+
     </Layout>
   );
 }

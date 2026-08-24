@@ -1,1 +1,179 @@
 @import "tailwindcss";
+
+/* ==========================================
+   GrowthFlow Enterprise Design System
+   Stripe × Linear × Vercel Inspired
+   ========================================== */
+
+@theme {
+  --color-background: #0b0f17;
+  --color-surface: #161b26;
+  --color-surface-2: #1b2230;
+  --color-border: #262d3d;
+
+  --color-text: #f8fafc;
+  --color-muted: #94a3b8;
+
+  --color-accent: #3b82f6;
+
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  --radius-card: 20px;
+}
+
+/* ---------- Base ---------- */
+
+:root {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-text);
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------- Global ---------- */
+
+* {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  border-color: var(--color-border);
+}
+
+/* Selection */
+
+::selection {
+  background: rgba(59, 130, 246, 0.22);
+  color: white;
+}
+
+/* ---------- Scrollbar ---------- */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0f17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a3244;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3b82f6;
+}
+
+/* ---------- Forms ---------- */
+
+input,
+textarea,
+select {
+  background: transparent;
+  color: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
+}
+
+/* ---------- Enterprise Components ---------- */
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.card-hover {
+  transition: all 0.2s ease;
+}
+
+.card-hover:hover {
+  border-color: #334155;
+  transform: translateY(-2px);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #ffffff, #d6dce8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ---------- Status Badges ---------- */
+
+.badge-success {
+  background: rgba(34, 197, 94, 0.12);
+  color: #22c55e;
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.badge-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* ---------- Buttons ---------- */
+
+button {
+  transition: all 0.18s ease;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Tables ---------- */
+
+table {
+  border-collapse: collapse;
+}
+
+tr {
+  transition: background 0.15s ease;
+}
+
+tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ---------- Utility ---------- */
+
+.surface {
+  background: var(--color-surface);
+}
+
+.surface-secondary {
+  background: var(--color-surface-2);
+}
+
+.border-enterprise {
+  border: 1px solid var(--color-border);
+}

@@ -1,41 +1,31 @@
-function AgentTimeline({ step }) {
-  const agents = [
+export default function AgentTimeline({ step }) {
+  const steps = [
     "Intent Agent",
     "Offer Agent",
     "Message Agent",
-    "Recovery Plan"
+    "Recovery Agent",
   ];
 
   return (
-    <div className="bg-gray-900 rounded-3xl p-6 border border-gray-800">
-
-      <h2 className="text-xl font-semibold mb-6">
-        AI Workflow
-      </h2>
+    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
+      <h2 className="text-2xl font-bold mb-6">AI Workflow</h2>
 
       <div className="space-y-4">
-
-        {agents.map((agent, index) => (
+        {steps.map((item, i) => (
           <div
-            key={agent}
-            className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-500 ${
-              step >= index
-                ? "bg-blue-600 text-white"
-                : "bg-gray-800 text-gray-400"
+            key={item}
+            className={`rounded-2xl p-4 transition-all duration-500 ${
+              step > i
+                ? "bg-gradient-to-r from-violet-600 to-fuchsia-600"
+                : step === i
+                ? "bg-violet-600/40 animate-pulse"
+                : "bg-white/5"
             }`}
           >
-            <div className="text-xl">
-              {step > index ? "✓" : step === index ? "⏳" : "○"}
-            </div>
-
-            <div>{agent}</div>
+            {step > i ? "✓" : step === i ? "⌛" : "○"} {item}
           </div>
         ))}
-
       </div>
-
     </div>
   );
 }
-
-export default AgentTimeline;
