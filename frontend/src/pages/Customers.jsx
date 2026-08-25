@@ -1,43 +1,47 @@
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
-
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Layout from "../components/Layout";
-import PageWrapper from "../components/PageWrapper";
 import CustomerTable from "../components/CustomerTable";
 
 export default function Customers() {
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
 
+  const [search, setSearch] = useState(
+    searchParams.get("search") || ""
+  );
+
+  // Update search if the URL changes
   useEffect(() => {
-    toast.success("Customer dashboard loaded");
-  }, []);
+    setSearch(searchParams.get("search") || "");
+  }, [searchParams]);
 
   return (
     <Layout>
-      <PageWrapper>
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold">Customers</h1>
-            <p className="text-gray-400 mt-2">
-              Search and manage merchant customers.
-            </p>
-          </div>
+      <div className="max-w-7xl mx-auto space-y-8">
 
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-            <p className="text-xs text-gray-500">Active</p>
-            <p className="text-lg font-semibold text-violet-300">316 Customers</p>
-          </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold">Customers</h1>
+          <p className="text-muted mt-2">
+            Search and monitor customer activity.
+          </p>
         </div>
 
-        <input
-          placeholder="Search customers..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="mb-6 w-full max-w-md bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-violet-500 transition"
-        />
+        {/* Search Box */}
+        <div className="max-w-md">
+          <input
+            type="text"
+            placeholder="Search Customer ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-surface border border-border rounded-xl px-4 py-3 outline-none focus:border-blue-500 transition"
+          />
+        </div>
 
+        {/* Customer Table */}
         <CustomerTable search={search} />
-      </PageWrapper>
+
+      </div>
     </Layout>
   );
 }

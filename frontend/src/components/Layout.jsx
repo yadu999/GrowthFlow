@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import CommandPalette from "./CommandPalette";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "react-hot-toast";
@@ -33,6 +33,8 @@ const menu = [
 ];
 
 export default function Layout({ children }) {
+  const navigate = useNavigate();
+
   const [mobileMenu, setMobileMenu] = useState(false);
 
   const [notificationOpen, setNotificationOpen] = useState(false);
@@ -40,6 +42,9 @@ export default function Layout({ children }) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const [notificationCount, setNotificationCount] = useState(3);
+
+  // NEW: Search state
+  const [searchQuery, setSearchQuery] = useState("");
 
   const notificationRef = useRef(null);
   const helpRef = useRef(null);
@@ -49,9 +54,19 @@ export default function Layout({ children }) {
     window.dispatchEvent(new Event("toggle-copilot"));
   };
 
+  // NEW: Customer search
+  const handleSearch = () => {
+    const query = searchQuery.trim();
+
+    if (!query) return;
+
+    navigate(`/customers?search=${encodeURIComponent(query)}`);
+  };
+
   useEffect(() => {
     const closeMobile = () => setMobileMenu(false);
     window.addEventListener("resize", closeMobile);
+
     return () => window.removeEventListener("resize", closeMobile);
   }, []);
 
@@ -60,17 +75,21 @@ export default function Layout({ children }) {
       if (
         notificationRef.current &&
         !notificationRef.current.contains(e.target)
-      )
+      ) {
         setNotificationOpen(false);
+      }
 
-      if (helpRef.current && !helpRef.current.contains(e.target))
+      if (helpRef.current && !helpRef.current.contains(e.target)) {
         setHelpOpen(false);
+      }
 
-      if (profileRef.current && !profileRef.current.contains(e.target))
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileOpen(false);
+      }
     };
 
     document.addEventListener("mousedown", handler);
+
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
@@ -78,11 +97,11 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-background text-text">
       <CommandPalette />
 
+      {/* NAVBAR */}
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border">
         <div className="max-w-[1600px] mx-auto px-5 lg:px-8 h-20 flex items-center justify-between gap-4">
 
           {/* LEFT */}
-
           <div className="flex items-center gap-8 min-w-0">
 
             <div className="min-w-fit">
@@ -117,33 +136,37 @@ export default function Layout({ children }) {
           </div>
 
           {/* RIGHT */}
-
           <div className="flex items-center gap-3 flex-shrink-0">
 
-            {/* Search */}
+            {/* WORKING CUSTOMER SEARCH */}
+            <div className="hidden xl:flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-2 w-80 focus-within:border-blue-500 transition">
 
-            <div className="hidden xl:flex items-center gap-3 bg-surface border border-border rounded-xl px-4 py-2 w-80">
               <Search size={17} className="text-muted" />
 
               <input
-                placeholder="Search customers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                placeholder="Search customer ID..."
                 className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted"
               />
 
-              <span className="text-xs text-muted border border-border rounded px-2 py-0.5">
-                ⌘K
-              </span>
+              <button
+                onClick={handleSearch}
+                className="text-xs text-muted border border-border rounded px-2 py-1 hover:bg-surface-secondary transition"
+              >
+                Enter
+              </button>
+
             </div>
 
             {/* Status */}
-
             <div className="hidden lg:flex items-center gap-2 text-sm text-muted">
               <span className="w-2.5 h-2.5 rounded-full bg-success"></span>
               Operational
             </div>
 
             {/* Copilot */}
-
             <button
               onClick={toggleCopilot}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface border border-border hover:border-slate-500 transition"
@@ -155,7 +178,6 @@ export default function Layout({ children }) {
             </button>
 
             {/* Notifications */}
-
             <div className="relative" ref={notificationRef}>
 
               <button
@@ -175,7 +197,6 @@ export default function Layout({ children }) {
                 <div className="absolute right-0 mt-3 w-80 rounded-2xl border border-border bg-surface shadow-2xl overflow-hidden">
 
                   <div className="flex items-center justify-between p-4 border-b border-border">
-
                     <h3 className="font-semibold">Notifications</h3>
 
                     <button
@@ -187,11 +208,9 @@ export default function Layout({ children }) {
                     >
                       Mark all read
                     </button>
-
                   </div>
 
                   <div className="divide-y divide-border">
-
                     {[
                       "Recovery workflow completed",
                       "Campaign launched successfully",
@@ -202,13 +221,11 @@ export default function Layout({ children }) {
                         className="p-4 hover:bg-surface-secondary transition"
                       >
                         <p className="text-sm">{item}</p>
-
                         <p className="text-xs text-muted mt-1">
                           {i + 1} min ago
                         </p>
                       </div>
                     ))}
-
                   </div>
 
                 </div>
@@ -217,7 +234,6 @@ export default function Layout({ children }) {
             </div>
 
             {/* Help */}
-
             <div className="relative hidden sm:block" ref={helpRef}>
 
               <button
@@ -279,8 +295,7 @@ export default function Layout({ children }) {
 
             </div>
 
-            {/* PROFILE */}
-
+            {/* Profile */}
             <div className="relative" ref={profileRef}>
 
               <button
@@ -292,15 +307,11 @@ export default function Layout({ children }) {
                 </div>
 
                 <div className="hidden sm:block min-w-0 text-left">
-                  <p className="text-sm font-semibold truncate">
-                    Yaduvansh
-                  </p>
-
+                  <p className="text-sm font-semibold truncate">Yaduvansh</p>
                   <p className="text-xs text-muted truncate">
                     Merchant Admin
                   </p>
                 </div>
-
               </button>
 
               {profileOpen && (
@@ -308,10 +319,7 @@ export default function Layout({ children }) {
 
                   <div className="p-4 border-b border-border">
                     <p className="font-semibold">Yaduvansh</p>
-
-                    <p className="text-sm text-muted">
-                      Merchant Admin
-                    </p>
+                    <p className="text-sm text-muted">Merchant Admin</p>
                   </div>
 
                   <NavLink
@@ -355,8 +363,7 @@ export default function Layout({ children }) {
 
             </div>
 
-            {/* MOBILE */}
-
+            {/* Mobile */}
             <button
               onClick={() => setMobileMenu(!mobileMenu)}
               className="lg:hidden w-11 h-11 rounded-xl bg-surface border border-border flex items-center justify-center"
@@ -368,7 +375,6 @@ export default function Layout({ children }) {
         </div>
 
         {/* MOBILE NAV */}
-
         {mobileMenu && (
           <div className="lg:hidden border-t border-border bg-background px-5 py-4 space-y-2">
             {menu.map((item) => {
@@ -395,7 +401,6 @@ export default function Layout({ children }) {
             })}
           </div>
         )}
-
       </header>
 
       <main className="max-w-[1600px] mx-auto px-5 lg:px-8 py-8">
