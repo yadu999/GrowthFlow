@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from ai import analyze_customer, client
 from rules import decide_offer
 from data_service import get_customers
+from agents import orchestrate
 
 app = FastAPI(title="GrowthFlow AI")
 
@@ -32,6 +33,7 @@ def customers():
 # AI Analysis
 @app.post("/analyze")
 def analyze(data: dict):
+    return orchestrate(data)
 
     offer = decide_offer(
         data["cart_value"],
