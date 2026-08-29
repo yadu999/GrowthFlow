@@ -1,11 +1,28 @@
+import {
+  CheckCircle2,
+  Brain,
+  MessageSquare,
+  Target,
+  ArrowUpRight,
+} from "lucide-react";
 import ConfidenceRing from "./ConfidenceRing";
-import SkeletonCard from "./SkeletonCard";
 
-function Info({ title, value }) {
+function Info({ title, value, icon: Icon }) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 backdrop-blur-xl">
-      <p className="text-gray-400 text-sm">{title}</p>
-      <h3 className="text-xl font-semibold mt-1">{value}</h3>
+    <div className="flex items-center justify-between py-4 border-b border-border last:border-0">
+      <div className="flex items-center gap-3">
+        <Icon size={17} className="text-muted" />
+
+        <div>
+          <p className="text-xs uppercase tracking-wider text-muted">
+            {title}
+          </p>
+        </div>
+      </div>
+
+      <span className="font-medium text-text text-right">
+        {value}
+      </span>
     </div>
   );
 }
@@ -13,69 +30,175 @@ function Info({ title, value }) {
 export default function AnalysisPanel({ result, loading }) {
   if (loading) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
-        <h2 className="text-2xl font-bold mb-6">AI Recovery Plan</h2>
+      <section className="py-2">
+        <div className="flex items-center justify-between pb-6 border-b border-border">
+          <div>
+            <p className="text-sm text-muted">Model Analysis</p>
+            <h2 className="text-2xl font-semibold mt-1 text-text">
+              Recovery Workflow
+            </h2>
+          </div>
 
-        <div className="space-y-4 animate-pulse">
-          <div className="h-24 rounded-2xl bg-white/10" />
-          <div className="h-20 rounded-2xl bg-white/10" />
-          <div className="h-20 rounded-2xl bg-white/10" />
-          <div className="h-32 rounded-2xl bg-white/10" />
+          <span className="text-sm text-accent animate-pulse">
+            Analyzing...
+          </span>
         </div>
-      </div>
+
+        <div className="space-y-5 pt-6 animate-pulse">
+          <div className="h-10 bg-surface rounded-md" />
+          <div className="h-10 bg-surface rounded-md" />
+          <div className="h-10 bg-surface rounded-md" />
+          <div className="h-24 bg-surface rounded-md" />
+        </div>
+      </section>
     );
   }
 
   if (!result) {
     return (
-      <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6">
-        <h2 className="text-2xl font-bold">AI Recovery Plan</h2>
-        <p className="text-gray-400 mt-6">
-          Analyze a customer to generate AI recommendations.
-        </p>
-      </div>
+      <section className="py-2">
+        <div className="flex items-center gap-3 pb-6 border-b border-border">
+          <Brain size={22} className="text-accent" />
+
+          <div>
+            <p className="text-sm text-muted">Model Analysis</p>
+            <h2 className="text-2xl font-semibold text-text">
+              Recovery Workflow
+            </h2>
+          </div>
+        </div>
+
+        <div className="py-12 text-center">
+          <Brain size={40} className="mx-auto text-muted mb-4" />
+
+          <p className="text-text font-medium">
+            No prediction available
+          </p>
+
+          <p className="text-muted mt-2 max-w-md mx-auto">
+            Generate a workflow to view customer intent, recovery probability,
+            and personalized recommendations.
+          </p>
+        </div>
+      </section>
     );
   }
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 space-y-5">
-      <h2 className="text-2xl font-bold">AI Recovery Plan</h2>
+    <section className="py-2">
 
-      <Info title="Customer Intent" value={result.intent.intent} />
+      {/* Header */}
 
-      <Info title="Next Best Offer" value={result.offer.offer} />
+      <div className="flex items-start justify-between pb-6 border-b border-border">
 
-      <Info title="Confidence" value={`${result.intent.confidence}%`} />
+        <div>
+          <p className="text-sm text-muted">Model Analysis</p>
 
-      <Info
-        title="Recovery Probability"
-        value={`${result.recovery.probability}%`}
-      />
+          <h2 className="text-2xl font-semibold mt-1 text-text">
+            Recovery Workflow
+          </h2>
+        </div>
 
-      <Info title="Priority" value={result.recovery.priority} />
+        <div className="text-center">
+          <ConfidenceRing confidence={result.intent.confidence} />
+          <p className="text-xs text-muted mt-2">Confidence</p>
+        </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-        <p className="text-gray-400 text-sm mb-3">AI Reasoning</p>
+      </div>
 
-        <ul className="space-y-2">
+      {/* Key Insights */}
+
+      <div className="pt-3">
+
+        <Info
+          title="Customer Intent"
+          value={result.intent.intent}
+          icon={Target}
+        />
+
+        <Info
+          title="Next Best Offer"
+          value={result.offer.offer}
+          icon={CheckCircle2}
+        />
+
+        <Info
+          title="Recovery Probability"
+          value={`${result.recovery.probability}%`}
+          icon={ArrowUpRight}
+        />
+
+        <Info
+          title="Priority"
+          value={result.recovery.priority}
+          icon={Brain}
+        />
+
+      </div>
+
+      {/* AI Reasoning */}
+
+      <div className="pt-8 border-t border-border">
+
+        <div className="flex items-center gap-2 mb-5">
+          <Brain size={18} className="text-accent" />
+          <h3 className="font-semibold text-text">
+            Prediction Factors
+          </h3>
+        </div>
+
+        <div className="space-y-4">
+
           {result.intent.reasoning.map((item, i) => (
-            <li key={i} className="flex gap-2">
-              <span className="text-violet-400">•</span>
-              <span>{item}</span>
-            </li>
+            <div key={i} className="flex gap-3">
+              <span className="w-2 h-2 rounded-full bg-accent mt-2 shrink-0" />
+
+              <p className="text-muted leading-7">
+                {item}
+              </p>
+            </div>
           ))}
-        </ul>
+
+        </div>
+
       </div>
 
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-        <p className="text-gray-400 text-sm">Offer Explanation</p>
-        <p className="mt-2">{result.offer.why}</p>
+      {/* Offer Explanation */}
+
+      <div className="pt-8 border-t border-border">
+
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 size={18} className="text-accent" />
+          <h3 className="font-semibold text-text">
+            Why this offer
+          </h3>
+        </div>
+
+        <p className="text-muted leading-7">
+          {result.offer.why}
+        </p>
+
       </div>
 
-      <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/20 rounded-2xl p-4">
-        <p className="text-gray-300 text-sm mb-2">WhatsApp Recovery Message</p>
-        <p className="text-white">{result.message.message}</p>
+      {/* WhatsApp Preview */}
+
+      <div className="mt-8 rounded-xl border border-border bg-surface p-5">
+
+        <div className="flex items-center gap-2 mb-4">
+          <MessageSquare size={18} className="text-accent" />
+          <h3 className="font-semibold text-text">
+            Customer Message
+          </h3>
+        </div>
+
+        <div className="border-l-2 border-accent pl-4">
+          <p className="text-text leading-7">
+            {result.message.message}
+          </p>
+        </div>
+
       </div>
-    </div>
+
+    </section>
   );
 }

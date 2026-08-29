@@ -4,31 +4,35 @@ function MetricCard({
   title,
   value,
   change,
-  color = "text-white",
+  color = "text-text",
+  onClick,
 }) {
   return (
-    <div className="bg-surface border border-border rounded-[20px] p-6 hover:border-slate-600 transition-all duration-200">
-      {/* Header */}
-      <p className="text-muted text-sm font-medium">{title}</p>
+    <button
+      onClick={onClick}
+      className="w-full text-left py-5 border-b border-border hover:border-accent transition-all duration-200 group"
+    >
+      {/* Metric Title */}
+      <p className="text-sm text-muted font-medium tracking-wide">
+        {title}
+      </p>
 
-      {/* Main Value */}
-      <h2 className={`text-[32px] font-bold tracking-tight mt-3 ${color}`}>
+      {/* Metric Value */}
+      <h2
+        className={`text-[32px] font-semibold tracking-tight mt-2 ${color}`}
+      >
         {value}
       </h2>
 
-      {/* Trend */}
-      <div className="mt-5 flex items-center gap-2 text-sm text-muted">
-        <TrendingUp size={15} className="text-success" />
+      {/* Trend Indicator */}
+      <div className="mt-3 flex items-center gap-2 text-sm text-muted">
+        <TrendingUp
+          size={15}
+          className="text-success group-hover:text-accent transition-colors"
+        />
         <span>{change}</span>
       </div>
-
-      {/* Bottom Divider */}
-      <div className="mt-5 border-t border-border pt-4">
-        <div className="h-1 w-full rounded-full bg-slate-700 overflow-hidden">
-          <div className="h-full w-3/5 rounded-full bg-accent"></div>
-        </div>
-      </div>
-    </div>
+    </button>
   );
 }
 

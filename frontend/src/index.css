@@ -1,26 +1,27 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
 /* ==========================================
-   GrowthFlow Enterprise Design System
-   Stripe × Linear × Vercel Inspired
+   GrowthFlow × Google Vertex AI Design System
    ========================================== */
 
 @theme {
-  --color-background: #0b0f17;
-  --color-surface: #161b26;
-  --color-surface-2: #1b2230;
-  --color-border: #262d3d;
+  --color-background: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f9fafb;
+  --color-border: #e5e7eb;
 
-  --color-text: #f8fafc;
-  --color-muted: #94a3b8;
+  --color-text: #111827;
+  --color-muted: #6b7280;
 
-  --color-accent: #3b82f6;
+  --color-accent: #5b3fd8;
+  --color-accent-dark: #4b32b5;
 
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
 
-  --radius-card: 20px;
+  --radius-card: 12px;
 }
 
 /* ---------- Base ---------- */
@@ -28,6 +29,7 @@
 :root {
   font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
+
   background: var(--color-background);
   color: var(--color-text);
 }
@@ -41,7 +43,6 @@ body {
   min-height: 100vh;
   background: var(--color-background);
   color: var(--color-text);
-
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -61,8 +62,8 @@ body {
 /* Selection */
 
 ::selection {
-  background: rgba(59, 130, 246, 0.22);
-  color: white;
+  background: rgba(91, 63, 216, 0.15);
+  color: var(--color-text);
 }
 
 /* ---------- Scrollbar ---------- */
@@ -73,16 +74,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b0f17;
+  background: #f3f4f6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2a3244;
+  background: #cbd5e1;
   border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3b82f6;
+  background: #94a3b8;
 }
 
 /* ---------- Forms ---------- */
@@ -96,15 +97,27 @@ select {
 
 input::placeholder,
 textarea::placeholder {
-  color: #64748b;
+  color: #9ca3af;
 }
 
-/* ---------- Enterprise Components ---------- */
+/* ---------- Cards ---------- */
 
 .card {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+}
+
+.section {
+  padding: 28px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.panel {
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
 }
 
 .card-hover {
@@ -112,31 +125,47 @@ textarea::placeholder {
 }
 
 .card-hover:hover {
-  border-color: #334155;
-  transform: translateY(-2px);
+  border-color: #c7d2fe;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
+/* ---------- Typography ---------- */
+
 .text-gradient {
-  background: linear-gradient(90deg, #ffffff, #d6dce8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-text);
+}
+
+.heading-xl {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.heading-lg {
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.caption {
+  font-size: 0.875rem;
+  color: var(--color-muted);
 }
 
 /* ---------- Status Badges ---------- */
 
 .badge-success {
-  background: rgba(34, 197, 94, 0.12);
-  color: #22c55e;
+  background: rgba(22, 163, 74, 0.1);
+  color: var(--color-success);
 }
 
 .badge-warning {
-  background: rgba(245, 158, 11, 0.12);
-  color: #f59e0b;
+  background: rgba(217, 119, 6, 0.1);
+  color: var(--color-warning);
 }
 
 .badge-danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  background: rgba(220, 38, 38, 0.1);
+  color: var(--color-danger);
 }
 
 /* ---------- Buttons ---------- */
@@ -150,10 +179,54 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* Primary Button */
+
+.btn-primary {
+  background: var(--color-accent);
+  color: white;
+  border-radius: 8px;
+  padding: 10px 18px;
+}
+
+.btn-primary:hover {
+  background: var(--color-accent-dark);
+}
+
+/* Secondary Button */
+
+.btn-secondary {
+  background: white;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 10px 18px;
+}
+
+.btn-secondary:hover {
+  background: #f9fafb;
+}
+
 /* ---------- Tables ---------- */
 
 table {
   border-collapse: collapse;
+  width: 100%;
+}
+
+thead {
+  background: #f8fafc;
+}
+
+th {
+  color: var(--color-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+td,
+th {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 tr {
@@ -161,7 +234,7 @@ tr {
 }
 
 tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: #f9fafb;
 }
 
 /* ---------- Utility ---------- */
@@ -176,4 +249,31 @@ tr:hover {
 
 .border-enterprise {
   border: 1px solid var(--color-border);
+}
+
+.shadow-enterprise {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+}
+
+/* ---------- Google Vertex AI Feel ---------- */
+
+.panel-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.panel-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.metric-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.divider {
+  border-top: 1px solid var(--color-border);
 }

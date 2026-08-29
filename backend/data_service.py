@@ -1,10 +1,15 @@
 from pathlib import Path
 import pandas as pd
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-CSV_PATH = BASE_DIR / "data" / "sample_customers.csv"
+# Project root (growthflow-ai)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-df = pd.read_csv(CSV_PATH)
+# growthflow-ai/data/sample_customers.csv
+CSV_PATH = PROJECT_ROOT / "data" / "sample_customers.csv"
 
 def get_customers():
-    return df.to_dict(orient="records")
+    if not CSV_PATH.exists():
+        raise FileNotFoundError(f"CSV not found: {CSV_PATH}")
+
+    df = pd.read_csv(CSV_PATH)
+    return df.fillna("").to_dict(orient="records")

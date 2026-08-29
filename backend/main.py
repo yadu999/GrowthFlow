@@ -1,14 +1,36 @@
-from fastapi import FastAPI
+import asyncio
+import json
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from ai import analyze_customer, client
-from rules import decide_offer
+from copilot_service import ask_copilot
 from data_service import get_customers
 from agents import orchestrate
+from rules import decide_offer
+from database import SessionLocal
+from models import Customer, Prediction, RecoveryMessage, AuditLog
+from dashboard_service import get_dashboard
+from socket_manager import manager
+from live_sessions import create_live_customer
+from analytics_service import get_revenue_trend
+from product_service import search_products
+from checkout_service import create_checkout
+from agent_checkout import agent_checkout
+from campaign_service import create_campaign
+from upsell_service import recommend_addons
+from bundle_service import create_bundle_checkout
 
-app = FastAPI(title="GrowthFlow AI")
+app = FastAPI(
+    title="GrowthFlow AI",
+    version="2.0.0",
+    description="AI-powered commerce recovery assistant."
+)
 
+# -----------------------------------
 # CORS
+# -----------------------------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -20,90 +42,363 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# -----------------------------------
+# Live AI Engine
+# -----------------------------------
+
+async def live_engine():
+    while True:
+        db = SessionLocal()
+
+        try:
+            customer = await create_live_customer()
+
+            result = orchestrate({
+                "cart_value": customer.cart_value,
+                "time_spent": customer.time_spent,
+                "coupon_used": customer.coupon_used,
+            })
+
+            db.add(Prediction(
+                customer_id=customer.id,
+                intent=result["intent"]["intent"],
+                confidence=result["intent"]["confidence"],
+                recovery_probability=result["recovery"]["probability"],
+                priority=result["recovery"]["priority"],
+                offer=result["offer"]["offer"],
+            ))
+
+            db.add(RecoveryMessage(
+                customer_id=customer.id,
+                message=result["message"]["message"],
+                channel="WhatsApp",
+                sent=False,
+            ))
+
+            db.add(AuditLog(
+                customer_id=customer.id,
+                action="Live AI Recommendation",
+                input_data=json.dumps({
+                    "cart_value": customer.cart_value,
+                    "time_spent": customer.time_spent,
+                    "coupon_used": customer.coupon_used,
+                }),
+                ai_decision=json.dumps(result),
+                approved=False,
+            ))
+
+            db.commit()
+
+            await manager.broadcast({
+                "type": "new_customer",
+                "customer": {
+                    "id": customer.customer_id,
+                    "name": customer.name,
+                    "cart_value": customer.cart_value,
+                    "status": customer.status,
+                },
+                "analysis": result,
+            })
+
+        except Exception as e:
+            print("Live Engine Error:", e)
+            db.rollback()
+
+        finally:
+            db.close()
+
+        await asyncio.sleep(20)
+
+# -----------------------------------
+# Startup
+# -----------------------------------
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(live_engine())
+
+# -----------------------------------
 # Home
+# -----------------------------------
+
 @app.get("/")
 def home():
-    return {"status": "GrowthFlow AI running"}
+    return {
+        "status": "GrowthFlow AI running",
+        "version": "2.0.0"
+    }
 
-# Customer list
+# -----------------------------------
+# Dashboard
+# -----------------------------------
+
+@app.get("/dashboard")
+def dashboard():
+    return get_dashboard()
+
+# -----------------------------------
+# Revenue Analytics
+# -----------------------------------
+
+@app.get("/analytics/revenue")
+def revenue_trend():
+    return get_revenue_trend()
+
+# -----------------------------------
+# Customers
+# -----------------------------------
+
 @app.get("/customers")
 def customers():
     return get_customers()
 
-# AI Analysis
+# -----------------------------------
+# Product Catalog Search
+# -----------------------------------
+
+@app.get("/products/search")
+def product_search(
+    query: str | None = None,
+    category: str | None = None,
+    max_price: float | None = None,
+):
+    return search_products(query, category, max_price)
+
+# -----------------------------------
+# Checkout Creation
+# -----------------------------------
+
+@app.post("/checkout/create")
+def checkout(data: dict):
+
+    product = data.get("product")
+
+    if not product:
+        return {"error": "Product required"}
+
+    result = create_checkout(
+        product_name=product,
+        customer_name=data.get("customer", "Guest")
+    )
+
+    if result is None:
+        return {"error": "Product not found"}
+
+    return result
+
+# -----------------------------------
+# AI Buyer Checkout
+# -----------------------------------
+
+@app.post("/agent/checkout")
+def ai_checkout(data: dict):
+
+    return agent_checkout(
+        query=data.get("query"),
+        category=data.get("category"),
+        max_price=data.get("max_price"),
+        customer=data.get("customer", "Guest"),
+    )
+
+# -----------------------------------
+# Analyze Customer
+# -----------------------------------
+
 @app.post("/analyze")
 def analyze(data: dict):
-    return orchestrate(data)
 
-    offer = decide_offer(
-        data["cart_value"],
-        data["time_spent"],
-        data["coupon_used"],
-    )
-
-    ai_result = analyze_customer(data)
-
-    return {
-        "recommended_offer": offer,
-        "ai_analysis": ai_result,
-    }
-
-# Merchant Copilot
-@app.post("/copilot")
-def copilot(data: dict):
-    question = data["question"]
-
-    prompt = (
-        "You are GrowthFlow AI, an AI commerce assistant.\n\n"
-        "Current dashboard snapshot:\n"
-        "- Revenue Today: ₹3.2L\n"
-        "- Conversion Rate: 5.8%\n"
-        "- Abandoned Carts: 143\n"
-        "- AI Recovery Rate: 37%\n\n"
-        f"Merchant Question:\n{question}\n\n"
-        "Answer like a Razorpay AI assistant in under 80 words."
-    )
+    db = SessionLocal()
 
     try:
-        response = client.models.generate_content(
-            model="models/gemini-3.6-flash",
-            contents=prompt,
+        result = orchestrate(data)
+
+        result["rule_based_offer"] = decide_offer(
+            data["cart_value"],
+            data["time_spent"],
+            data["coupon_used"],
         )
 
-        return {"answer": response.text}
+        customer = (
+            db.query(Customer)
+            .filter(
+                Customer.cart_value == data["cart_value"],
+                Customer.time_spent == data["time_spent"],
+            )
+            .first()
+        )
+
+        if customer:
+
+            db.add(Prediction(
+                customer_id=customer.id,
+                intent=result["intent"]["intent"],
+                confidence=result["intent"]["confidence"],
+                recovery_probability=result["recovery"]["probability"],
+                priority=result["recovery"]["priority"],
+                offer=result["offer"]["offer"],
+            ))
+
+            db.add(RecoveryMessage(
+                customer_id=customer.id,
+                message=result["message"]["message"],
+                channel="WhatsApp",
+                sent=False,
+            ))
+
+            db.add(AuditLog(
+                customer_id=customer.id,
+                action="Merchant Analysis",
+                input_data=json.dumps(data),
+                ai_decision=json.dumps(result),
+                approved=False,
+            ))
+
+            db.commit()
+
+        return result
 
     except Exception as e:
-        print("Copilot fallback:", e)
+        db.rollback()
+        return {"error": str(e)}
 
-        q = question.lower()
+    finally:
+        db.close()
 
-        if "abandon" in q:
-            answer = (
-                "Today's cart abandonment is mainly driven by price sensitivity "
-                "and checkout friction. Offer free shipping or a 10% coupon to "
-                "high-value carts for the biggest recovery impact."
+# -----------------------------------
+# Merchant Copilot
+# -----------------------------------
+
+@app.post("/copilot")
+def copilot(data: dict):
+
+    question = data.get("question", "").strip()
+
+    if not question:
+        return {
+            "answer": (
+                "Ask me about customers, abandoned carts, products, "
+                "campaigns, recovery strategies, or revenue."
             )
+        }
 
-        elif "free shipping" in q:
-            answer = (
-                "Offer free shipping for carts above ₹2,000. It typically reduces "
-                "checkout friction while protecting margins."
-            )
+    return ask_copilot(question)
 
-        elif "target" in q or "customer" in q:
-            answer = (
-                "Prioritize high-value customers who spent over 8 minutes browsing "
-                "without using a coupon. They have the highest recovery potential."
-            )
+# -----------------------------------
+# Campaign Orchestrator (Phase 4)
+# -----------------------------------
 
-        else:
-            answer = (
-                "Based on your dashboard, focus on recovering high-value abandoned "
-                "carts first and personalize offers using AI recommendations."
-            )
+@app.post("/campaign/create")
+def campaign(data: dict):
 
-        return {"answer": answer}
+    return create_campaign(
+        name=data.get("name", "AI Recovery Campaign"),
+        channel=data.get("channel", "WhatsApp"),
+    )
 
-    return {
-        "answer": response.text
-    }
+# -----------------------------------
+# Audit History
+# -----------------------------------
+
+@app.get("/audit")
+def audit_history():
+
+    db = SessionLocal()
+
+    try:
+        logs = (
+            db.query(AuditLog)
+            .order_by(AuditLog.created_at.desc())
+            .all()
+        )
+
+        return [
+            {
+                "id": log.id,
+                "customer_id": log.customer_id,
+                "action": log.action,
+                "approved": log.approved,
+                "created_at": log.created_at,
+            }
+            for log in logs
+        ]
+
+    finally:
+        db.close()
+
+# -----------------------------------
+# Approve AI Recommendation
+# -----------------------------------
+
+@app.post("/approve/{audit_id}")
+def approve_action(audit_id: int):
+
+    db = SessionLocal()
+
+    try:
+        audit = (
+            db.query(AuditLog)
+            .filter(AuditLog.id == audit_id)
+            .first()
+        )
+
+        if audit is None:
+            return {"error": "Audit log not found"}
+
+        audit.approved = True
+
+        db.commit()
+        db.refresh(audit)
+
+        return {
+            "status": "approved",
+            "audit_id": audit.id,
+            "approved": audit.approved,
+        }
+
+    finally:
+        db.close()
+
+        # -----------------------------------
+# AI Upsell & Cross-Sell Agent
+# -----------------------------------
+
+@app.post("/upsell")
+def upsell(data: dict):
+
+    product = data.get("product")
+
+    if not product:
+        return {"error": "Product required"}
+
+    return recommend_addons(product)
+
+# -----------------------------------
+# Bundle Checkout
+# -----------------------------------
+
+@app.post("/bundle/checkout")
+def bundle_checkout(data: dict):
+
+    product = data.get("product")
+    customer = data.get("customer", "Guest")
+
+    if not product:
+        return {"error": "Product required"}
+
+    return create_bundle_checkout(product, customer)
+
+# -----------------------------------
+# Dashboard WebSocket
+# -----------------------------------
+
+@app.websocket("/ws/dashboard")
+async def websocket_dashboard(websocket: WebSocket):
+
+    await manager.connect(websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)

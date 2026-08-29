@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  Download,
+  ArrowDownUp,
+  Users,
+  User,
+  ChevronRight,
+} from "lucide-react";
 
 export default function CustomerTable({ search = "" }) {
   const [customers, setCustomers] = useState([]);
@@ -13,27 +20,30 @@ export default function CustomerTable({ search = "" }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // Search Filter
+  /* Search */
+
   const filteredCustomers = useMemo(() => {
     return customers.filter((c) =>
       c.CustomerID.toLowerCase().includes(search.toLowerCase())
     );
   }, [customers, search]);
 
-  // Sorting
+  /* Sort */
+
   const sortedCustomers = useMemo(() => {
-    const sorted = [...filteredCustomers];
+    const data = [...filteredCustomers];
 
     if (sort === "cart") {
-      sorted.sort((a, b) => b.CartValue - a.CartValue);
+      data.sort((a, b) => b.CartValue - a.CartValue);
     } else {
-      sorted.sort((a, b) => a.Status.localeCompare(b.Status));
+      data.sort((a, b) => a.Status.localeCompare(b.Status));
     }
 
-    return sorted;
+    return data;
   }, [filteredCustomers, sort]);
 
-  // Export CSV
+  /* Export CSV */
+
   const exportCSV = () => {
     const rows = [
       ["Customer", "Cart", "Status"],
@@ -44,9 +54,12 @@ export default function CustomerTable({ search = "" }) {
       ]),
     ];
 
-    const csv = rows.map((row) => row.join(",")).join("\n");
+    const csv = rows.map((r) => r.join(",")).join("\n");
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8;",
+    });
+
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
@@ -57,72 +70,81 @@ export default function CustomerTable({ search = "" }) {
     URL.revokeObjectURL(url);
   };
 
+  /* Status */
+
   const getStatusStyle = (status) => {
     switch (status) {
       case "Recovered":
-        return "bg-green-500/20 text-green-300 border-green-500/30";
+        return "text-success";
 
       case "Abandoned":
-        return "bg-red-500/20 text-red-300 border-red-500/30";
+        return "text-danger";
 
       default:
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
+        return "text-warning";
     }
   };
 
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl p-6 shadow-xl">
+    <section className="py-2">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-border">
         <div>
-          <h2 className="text-2xl font-bold">Customer Activity</h2>
-          <p className="text-sm text-gray-400 mt-1">
-            Live customer purchase tracking
-          </p>
+          <p className="text-sm text-muted">Customer Monitoring</p>
+
+          <h2 className="text-2xl font-semibold mt-1 text-text">
+            Customer Activity
+          </h2>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Sort Dropdown */}
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 outline-none focus:border-violet-500"
-          >
-            <option value="cart">Highest Cart</option>
-            <option value="status">Sort by Status</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <ArrowDownUp
+              size={16}
+              className="absolute left-3 top-3 text-muted"
+            />
 
-          {/* Export Button */}
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="pl-9 pr-8 py-2 rounded-lg border border-border bg-background text-text text-sm outline-none hover:border-accent"
+            >
+              <option value="cart">Highest Cart</option>
+              <option value="status">Sort by Status</option>
+            </select>
+          </div>
+
           <button
             onClick={exportCSV}
-            className="px-4 py-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:opacity-90 transition font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-surface transition"
           >
-            Export CSV
+            <Download size={16} />
+            Export
           </button>
 
-          {/* Counter */}
-          <div className="bg-white/5 border border-white/10 rounded-xl px-4 py-2">
-            <p className="text-xs text-gray-500">Showing</p>
-            <p className="font-semibold text-violet-300">
-              {sortedCustomers.length}
-            </p>
-          </div>
+          <span className="text-sm text-muted">
+            {sortedCustomers.length} customers
+          </span>
         </div>
       </div>
 
       {/* Table */}
+
       {loading ? (
-        <div className="py-16 text-center text-gray-400">
-          Loading customers...
+        <div className="py-20 flex flex-col items-center text-muted">
+          <Users size={36} className="animate-pulse mb-3" />
+          Loading customer data...
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="pt-3 overflow-x-auto">
           <table className="w-full">
-            <thead className="text-gray-400 text-sm border-b border-white/10">
-              <tr>
-                <th className="text-left py-3">Customer</th>
-                <th className="text-left py-3">Cart</th>
-                <th className="text-left py-3">Status</th>
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wider text-muted border-b border-border">
+                <th className="py-3 font-medium">Customer</th>
+                <th className="py-3 font-medium">Cart Value</th>
+                <th className="py-3 font-medium">Status</th>
+                <th className="py-3 font-medium text-right">Action</th>
               </tr>
             </thead>
 
@@ -130,46 +152,69 @@ export default function CustomerTable({ search = "" }) {
               {sortedCustomers.map((c) => (
                 <tr
                   key={c.CustomerID}
-                  className="border-b border-white/5 hover:bg-white/5 transition"
+                  className="border-b border-border hover:bg-surface transition"
                 >
+                  {/* Customer */}
+
                   <td className="py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 flex items-center justify-center font-semibold">
+                      <div className="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center text-sm font-semibold">
                         {c.CustomerID.slice(-1)}
                       </div>
 
                       <div>
-                        <p className="font-medium">{c.CustomerID}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="font-medium text-text">
+                          {c.CustomerID}
+                        </p>
+
+                        <p className="text-xs text-muted">
                           Active customer
                         </p>
                       </div>
                     </div>
                   </td>
 
-                  <td className="font-semibold">
+                  {/* Cart */}
+
+                  <td className="py-4 font-medium text-text">
                     ₹{c.CartValue.toLocaleString("en-IN")}
                   </td>
 
-                  <td>
+                  {/* Status */}
+
+                  <td className="py-4">
                     <span
-                      className={`px-3 py-1 rounded-full text-sm border ${getStatusStyle(
+                      className={`text-sm font-medium ${getStatusStyle(
                         c.Status
                       )}`}
                     >
                       {c.Status}
                     </span>
                   </td>
+
+                  {/* Action */}
+
+                  <td className="py-4 text-right">
+                    <button className="inline-flex items-center gap-1 text-sm text-accent hover:underline">
+                      View
+                      <ChevronRight size={15} />
+                    </button>
+                  </td>
                 </tr>
               ))}
 
               {sortedCustomers.length === 0 && (
                 <tr>
-                  <td
-                    colSpan="3"
-                    className="py-10 text-center text-gray-500"
-                  >
-                    No customers found.
+                  <td colSpan={4} className="py-16 text-center">
+                    <User size={34} className="mx-auto mb-3 text-muted" />
+
+                    <p className="font-medium text-text">
+                      No customers found
+                    </p>
+
+                    <p className="text-sm text-muted mt-1">
+                      Try changing your search or sorting options.
+                    </p>
                   </td>
                 </tr>
               )}
@@ -177,6 +222,6 @@ export default function CustomerTable({ search = "" }) {
           </table>
         </div>
       )}
-    </div>
+    </section>
   );
 }
