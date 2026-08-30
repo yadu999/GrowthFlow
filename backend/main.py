@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +21,8 @@ from agent_checkout import agent_checkout
 from campaign_service import create_campaign
 from upsell_service import recommend_addons
 from bundle_service import create_bundle_checkout
+from razorpay_service import create_order, verify_signature
+from fastapi import HTTPException
 
 app = FastAPI(
     title="GrowthFlow AI",
@@ -386,6 +389,48 @@ def bundle_checkout(data: dict):
         return {"error": "Product required"}
 
     return create_bundle_checkout(product, customer)
+
+@app.post("/razorpay/order")
+def razorpay_order(data: dict):
+
+    amount = data.get("amount")
+    customer = data.get("customer", "Guest")
+
+    if not amount:
+        raise HTTPException(status_code=400, detail="Amount required")
+
+    order = create_order(
+        amount=amount,
+        receipt=f"growthflow_{customer}"
+    )
+
+    return {
+        "order_id": order["id"],
+        "amount": order["amount"],
+        "currency": order["currency"],
+        "key": os.getenv("RAZORPAY_KEY_ID")
+    }
+
+
+@app.post("/razorpay/verify")
+def razorpay_verify(data: dict):
+
+    try:
+        verify_signature(
+            data["razorpay_order_id"],
+            data["razorpay_payment_id"],
+            data["razorpay_signature"]
+        )
+
+        return {
+            "status": "success"
+        }
+
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid payment signature"
+        )
 
 # -----------------------------------
 # Dashboard WebSocket

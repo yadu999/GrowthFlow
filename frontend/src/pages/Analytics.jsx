@@ -1,11 +1,11 @@
-import Layout from "../components/Layout";
+
 import PageWrapper from "../components/PageWrapper";
 import RevenueChart from "../components/RevenueChart";
 import MetricCard from "../components/MetricCard";
 
 export default function Analytics() {
   return (
-    <Layout>
+    
       <PageWrapper>
 
         <h1 className="text-4xl font-bold mb-8">
@@ -21,6 +21,6 @@ export default function Analytics() {
         <RevenueChart />
 
       </PageWrapper>
-    </Layout>
+  
   );
 }

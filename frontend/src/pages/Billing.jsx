@@ -1,4 +1,4 @@
-import Layout from "../components/Layout";
+
 import { CreditCard, Download, CheckCircle } from "lucide-react";
 
 export default function Billing() {
@@ -9,7 +9,7 @@ export default function Billing() {
   ];
 
   return (
-    <Layout>
+   
       <div className="max-w-5xl mx-auto space-y-8">
 
         <div>
@@ -71,7 +71,7 @@ export default function Billing() {
         </div>
 
       </div>
-    </Layout>
+    
   );
 }
 

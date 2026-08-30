@@ -4,180 +4,247 @@ import { Sparkles, ShoppingCart } from "lucide-react";
 export default function UpsellCard() {
   const [bundle, setBundle] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState("Samsung Smart TV");
 
+  const demoProducts = [
+    "Samsung Smart TV",
+    "LG OLED TV",
+    "Sony WH-1000XM5",
+    "Apple Watch Series 9",
+  ];
+
+  // -----------------------------
   // Generate AI Bundle
-  const generateBundle = async () => {
+  // -----------------------------
+  const generateBundle = async (randomize = false) => {
     setLoading(true);
 
     try {
+      let product = currentProduct;
+
+      if (randomize) {
+        const available = demoProducts.filter((p) => p !== currentProduct);
+        product = available[Math.floor(Math.random() * available.length)];
+        setCurrentProduct(product);
+      }
+
       const res = await fetch("http://127.0.0.1:8000/upsell", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          product: "Samsung Smart TV",
+          product,
         }),
       });
 
       const data = await res.json();
+      console.log("Upsell API Response:", data);
+
       setBundle(data);
     } catch (err) {
       console.error(err);
+      alert("Unable to generate bundle.");
     }
 
     setLoading(false);
   };
 
-  // Accept Bundle & Create Checkout
+  // -----------------------------
+  // Razorpay Checkout
+  // -----------------------------
   const acceptBundle = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/bundle/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          product: bundle.product.name,
-          customer: "Demo Merchant",
-        }),
-      });
+      const total =
+        bundle.grand_total ??
+        bundle.total_amount ??
+        bundle.original_total ??
+        0;
 
-      const data = await res.json();
-
-      alert(
-        `Bundle Ready!\n\n` +
-          `Total: ₹${data.total_amount.toLocaleString("en-IN")}\n\n` +
-          `Payment Link Created`
+      const orderRes = await fetch(
+        "http://127.0.0.1:8000/razorpay/order",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: total,
+            customer: "Demo Merchant",
+          }),
+        }
       );
+
+      const order = await orderRes.json();
+
+      const options = {
+        key: order.key,
+        amount: order.amount,
+        currency: order.currency,
+        name: "GrowthFlow AI",
+        description: "AI Bundle Checkout",
+        order_id: order.order_id,
+
+        handler: async function (response) {
+          const verify = await fetch(
+            "http://127.0.0.1:8000/razorpay/verify",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(response),
+            }
+          );
+
+          if (verify.ok) {
+            alert("Payment Successful!");
+          } else {
+            alert("Payment Verification Failed.");
+          }
+        },
+
+        prefill: {
+          name: "Demo Merchant",
+          email: "demo@growthflow.ai",
+          contact: "9876543210",
+        },
+
+        theme: {
+          color: "#5B3FD8",
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
     } catch (err) {
       console.error(err);
-      alert("Failed to create bundle checkout.");
+      alert("Unable to start Razorpay Checkout.");
     }
   };
 
-  return (
-    <div className="bg-card rounded-2xl p-6 border border-border">
+  // Safe values
+  const originalTotal = Number(bundle?.original_total ?? bundle?.total_amount ?? 0);
+  const discount = Number(bundle?.discount ?? 0);
+  const grandTotal = Number(
+    bundle?.grand_total ??
+      bundle?.total_amount ??
+      originalTotal - discount
+  );
 
+  return (
+    <div className="bg-card rounded-2xl p-6 border border-border w-full">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
+      <div className="flex items-center gap-3 mb-6">
         <div className="p-3 rounded-xl bg-primary/10 text-primary">
           <Sparkles size={22} />
         </div>
 
         <div>
-          <h3 className="font-semibold">AI Bundle Recommendation</h3>
+          <h3 className="font-semibold text-lg">
+            AI Bundle Recommendation
+          </h3>
 
           <p className="text-sm text-muted">
-            Autonomous Upsell & Cross-Sell
+            Autonomous Upsell & Cross-Sell powered by GrowthFlow AI.
           </p>
         </div>
       </div>
 
-      {/* Generate Bundle Button */}
-      {!bundle && (
+      {/* Initial Button */}
+      {!bundle ? (
         <button
-          onClick={generateBundle}
+          onClick={() => generateBundle(false)}
           disabled={loading}
-          className="w-full py-3 rounded-xl bg-primary text-white hover:opacity-90 transition disabled:opacity-50"
+          className="w-full h-12 rounded-xl bg-[#5B3FD8] text-white font-medium hover:bg-[#4B32B5] transition disabled:opacity-60"
         >
           {loading ? "Generating..." : "Generate Bundle"}
         </button>
-      )}
-
-      {/* Bundle Results */}
-      {bundle && (
-        <div className="space-y-5">
-
+      ) : (
+        <div className="space-y-4">
           {/* Selected Product */}
-          <div className="rounded-xl bg-surface p-4 border border-border">
-            <div className="flex justify-between items-center">
-              <div>
-                <h4 className="font-semibold">{bundle.product.name}</h4>
-                <p className="text-sm text-muted">Base Product</p>
-              </div>
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-xs text-muted uppercase">
+              Selected Product
+            </p>
 
-              <span className="font-semibold">
-                ₹{bundle.product.price.toLocaleString("en-IN")}
-              </span>
-            </div>
-          </div>
-
-          {/* Recommended Products */}
-          <div>
-            <h4 className="text-sm font-semibold mb-3">
-              Recommended Add-ons
+            <h4 className="font-semibold mt-1">
+              {bundle.product?.name || "Selected Product"}
             </h4>
 
+            <p className="text-sm text-muted">
+              ₹{Number(bundle.product?.price || 0).toLocaleString("en-IN")}
+            </p>
+          </div>
+
+          {/* Recommendations */}
+          <div className="rounded-xl border border-border p-4">
+            <p className="text-xs text-muted uppercase mb-3">
+              AI Recommended Bundle
+            </p>
+
             <div className="space-y-3">
-              {bundle.recommended.map((item) => (
+              {bundle.recommendations?.map((item, index) => (
                 <div
-                  key={item.sku}
-                  className="flex justify-between rounded-lg bg-surface p-3 border border-border"
+                  key={index}
+                  className="flex justify-between items-center"
                 >
                   <div>
-                    <p>{item.name}</p>
+                    <p className="font-medium">{item.name}</p>
+
                     <p className="text-xs text-muted">
-                      {item.category}
+                      {item.reason || "AI recommendation"}
                     </p>
                   </div>
 
-                  <span>
-                    ₹{item.price.toLocaleString("en-IN")}
+                  <span className="font-semibold">
+                    ₹{Number(item.price).toLocaleString("en-IN")}
                   </span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Revenue Summary */}
-          <div className="rounded-xl bg-surface p-4 border border-border">
+          {/* Pricing */}
+          <div className="rounded-xl border border-border p-4 space-y-2">
+            <div className="flex justify-between">
+              <span className="text-muted">Original Total</span>
 
-            <div className="flex justify-between mb-2">
-              <span>Additional Revenue</span>
-
-              <span className="font-semibold text-green-500">
-                ₹{bundle.additional_value.toLocaleString("en-IN")}
-              </span>
+              <span>₹{originalTotal.toLocaleString("en-IN")}</span>
             </div>
 
-            <div className="flex justify-between text-lg font-semibold">
-              <span>New Order Value</span>
+            <div className="flex justify-between text-green-600">
+              <span>Bundle Discount</span>
 
-              <span>
-                ₹{bundle.grand_total.toLocaleString("en-IN")}
-              </span>
+              <span>-₹{discount.toLocaleString("en-IN")}</span>
             </div>
 
+            <div className="flex justify-between pt-3 border-t border-border font-bold text-lg">
+              <span>Total</span>
+
+              <span>₹{grandTotal.toLocaleString("en-IN")}</span>
+            </div>
           </div>
 
-          {/* AI Reasoning */}
-          <div className="rounded-xl bg-surface p-4 border border-border">
-
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles size={18} className="text-primary" />
-
-              <span className="font-semibold">AI Reasoning</span>
-            </div>
-
-            <p className="text-sm text-muted">
-              {bundle.reason}
-            </p>
-
-          </div>
-
-          {/* Accept Bundle */}
+          {/* Razorpay Button */}
           <button
             onClick={acceptBundle}
-            className="w-full py-3 rounded-xl bg-primary text-white flex items-center justify-center gap-2 hover:opacity-90 transition"
+            className="w-full h-12 rounded-xl bg-[#5B3FD8] text-white hover:bg-[#4B32B5] transition flex items-center justify-center gap-2"
           >
             <ShoppingCart size={18} />
-            Accept Bundle
+            Pay with Razorpay
           </button>
 
+          {/* Generate Another Bundle */}
+          <button
+            onClick={() => generateBundle(true)}
+            disabled={loading}
+            className="w-full h-12 rounded-xl border border-border hover:bg-gray-50 transition disabled:opacity-60"
+          >
+            {loading ? "Generating..." : "Generate Another Bundle"}
+          </button>
         </div>
       )}
-
     </div>
   );
 }

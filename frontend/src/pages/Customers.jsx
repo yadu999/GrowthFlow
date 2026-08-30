@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import Layout from "../components/Layout";
+
 import CustomerTable from "../components/CustomerTable";
 
 export default function Customers() {
@@ -16,7 +16,7 @@ export default function Customers() {
   }, [searchParams]);
 
   return (
-    <Layout>
+    
       <div className="max-w-7xl mx-auto space-y-8">
 
         {/* Header */}
@@ -42,6 +42,6 @@ export default function Customers() {
         <CustomerTable search={search} />
 
       </div>
-    </Layout>
+    
   );
 }

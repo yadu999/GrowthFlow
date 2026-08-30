@@ -1,14 +1,13 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { toast } from "react-hot-toast";
 import CommandPalette from "./CommandPalette";
+import CopilotPanel from "./CopilotPanel";
 
 import {
   LayoutDashboard,
   Users,
   BarChart3,
   Sparkles,
-  Megaphone,
   Settings,
   Search,
   Bell,
@@ -18,7 +17,7 @@ import {
   X,
   FileText,
   Keyboard,
-  User,
+  User,          
   CreditCard,
   LogOut,
 } from "lucide-react";
@@ -27,21 +26,19 @@ const menu = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/" },
   { name: "Customers", icon: Users, path: "/customers" },
   { name: "Analytics", icon: BarChart3, path: "/analytics" },
-  { name: "Recovery", icon: Sparkles, path: "/recovery" },
-  { name: "Campaigns", icon: Megaphone, path: "/campaigns" },
+  { name: "AI Bundle", icon: Sparkles, path: "/bundle" },
   { name: "Settings", icon: Settings, path: "/settings" },
 ];
 
-export default function Layout({ children }) {
+export default function Layout() {
   const navigate = useNavigate();
 
   const [mobileMenu, setMobileMenu] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(3);
+  const [notificationCount] = useState(3);
   const [searchQuery, setSearchQuery] = useState("");
-
   const [copilotOpen, setCopilotOpen] = useState(false);
 
   const notificationRef = useRef(null);
@@ -49,26 +46,17 @@ export default function Layout({ children }) {
   const profileRef = useRef(null);
 
   const toggleCopilot = () => {
-    const nextState = !copilotOpen;
-    setCopilotOpen(nextState);
-
-    window.dispatchEvent(
-      new CustomEvent("toggle-copilot", {
-        detail: { open: nextState },
-      })
-    );
+    setCopilotOpen((prev) => !prev);
   };
 
   const handleSearch = () => {
     const query = searchQuery.trim();
     if (!query) return;
-
     navigate(`/customers?search=${encodeURIComponent(query)}`);
   };
 
   useEffect(() => {
     const closeMobile = () => setMobileMenu(false);
-
     window.addEventListener("resize", closeMobile);
     return () => window.removeEventListener("resize", closeMobile);
   }, []);
@@ -99,32 +87,19 @@ export default function Layout({ children }) {
     <div className="min-h-screen bg-[#F5F6FA] text-gray-900">
       <CommandPalette />
 
-      {/* Floating SaaS Header */}
-
-      <header className="sticky top-3 z-50 px-6">
-        <div className="max-w-[1800px] mx-auto">
+      {/* Floating Header */}
+      <header className="sticky top-4 z-50 px-6 lg:px-8 xl:px-10">
+        <div className="max-w-[1720px] mx-auto">
           <div className="bg-white rounded-2xl shadow-md border border-gray-200 px-6 py-3 flex items-center justify-between gap-6">
 
             {/* Logo */}
-
             <div className="flex items-center gap-3 shrink-0">
               <div className="w-10 h-10 rounded-xl bg-[#5B3FD8] flex items-center justify-center text-white font-bold text-lg">
                 G
               </div>
-
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">
-                  GrowthFlow
-                </h1>
-
-                <p className="text-xs text-gray-500">
-                  Commerce Intelligence
-                </p>
-              </div>
             </div>
 
-            {/* Center Navigation */}
-
+            {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center bg-gray-100 rounded-full p-1 gap-1">
               {menu.map((item) => {
                 const Icon = item.icon;
@@ -150,14 +125,11 @@ export default function Layout({ children }) {
             </nav>
 
             {/* Right Side */}
-
             <div className="flex items-center gap-3">
 
               {/* Search */}
-
               <div className="hidden xl:flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2 w-64">
                 <Search size={16} className="text-gray-400" />
-
                 <input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -168,14 +140,12 @@ export default function Layout({ children }) {
               </div>
 
               {/* Status */}
-
               <div className="hidden xl:flex items-center gap-2 text-sm text-gray-500">
                 <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
                 Operational
               </div>
 
-              {/* Copilot */}
-
+              {/* Copilot Button */}
               <button
                 onClick={toggleCopilot}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
@@ -188,179 +158,134 @@ export default function Layout({ children }) {
               </button>
 
               {/* Notifications */}
+<div className="relative" ref={notificationRef}>
+  <button
+    onClick={() => setNotificationOpen((prev) => !prev)}
+    className="relative w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition"
+  >
+    <Bell size={18} className="text-gray-700" />
 
-              <div className="relative" ref={notificationRef}>
-                <button
-                  onClick={() => setNotificationOpen(!notificationOpen)}
-                  className="relative w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
-                >
-                  <Bell size={18} className="text-gray-700" />
+    {notificationCount > 0 && (
+      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
+        {notificationCount}
+      </span>
+    )}
+  </button>
 
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
-                      {notificationCount}
-                    </span>
-                  )}
-                </button>
+  {notificationOpen && (
+    <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-semibold">Notifications</h3>
+        <button
+          onClick={() => setNotificationCount(0)}
+          className="text-xs text-[#5B3FD8]"
+        >
+          Mark all read
+        </button>
+      </div>
 
-                {notificationOpen && (
-                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-                    <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                      <h3 className="font-semibold">
-                        Notifications
-                      </h3>
+      <div className="space-y-3">
+        <div className="p-3 rounded-xl bg-gray-50">
+          <p className="font-medium text-sm">Recovery campaign launched</p>
+          <p className="text-xs text-gray-500">2 min ago</p>
+        </div>
 
-                      <button
-                        onClick={() => {
-                          setNotificationCount(0);
-                          toast.success("Notifications cleared");
-                        }}
-                        className="text-xs text-[#5B3FD8]"
-                      >
-                        Mark all read
-                      </button>
-                    </div>
+        <div className="p-3 rounded-xl bg-gray-50">
+          <p className="font-medium text-sm">12 carts recovered</p>
+          <p className="text-xs text-gray-500">10 min ago</p>
+        </div>
 
-                    {[
-                      "Recovery workflow completed",
-                      "Campaign launched",
-                      "3 high-intent customers detected",
-                    ].map((item, i) => (
-                      <div
-                        key={i}
-                        className="p-4 border-b last:border-0 border-gray-100 hover:bg-gray-50"
-                      >
-                        <p className="text-sm">{item}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {i + 1} min ago
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+        <div className="p-3 rounded-xl bg-gray-50">
+          <p className="font-medium text-sm">New AI bundle generated</p>
+          <p className="text-xs text-gray-500">25 min ago</p>
+        </div>
+      </div>
+    </div>
+  )}
+</div>
 
               {/* Help */}
+<div className="relative hidden sm:block" ref={helpRef}>
+  <button
+    onClick={() => setHelpOpen((prev) => !prev)}
+    className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition"
+  >
+    <CircleHelp size={18} className="text-gray-700" />
+  </button>
 
-              <div className="relative hidden sm:block" ref={helpRef}>
-                <button
-                  onClick={() => setHelpOpen(!helpOpen)}
-                  className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
-                >
-                  <CircleHelp size={18} className="text-gray-700" />
-                </button>
+  {helpOpen && (
+    <div className="absolute right-0 mt-3 w-64 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 z-50">
+      <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+        Documentation
+      </button>
 
-                {helpOpen && (
-                  <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-                    {[
-                      ["Documentation", FileText],
-                      ["Keyboard Shortcuts", Keyboard],
-                      ["Contact Support", User],
-                      ["About GrowthFlow", CircleHelp],
-                    ].map(([label, Icon], i) => (
-                      <button
-                        key={i}
-                        onClick={() => {
-                          toast(label);
-                          setHelpOpen(false);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left"
-                      >
-                        <Icon size={18} />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+      <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+        Keyboard Shortcuts
+      </button>
+
+      <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
+        Contact Support
+      </button>
+    </div>
+  )}
+</div>
 
               {/* Profile */}
+<div className="relative" ref={profileRef}>
+  <button
+    onClick={() => setProfileOpen((prev) => !prev)}
+    className="flex items-center gap-2"
+  >
+    <div className="w-10 h-10 rounded-full bg-[#5B3FD8] text-white flex items-center justify-center font-semibold">
+      Y
+    </div>
 
-              <div className="relative" ref={profileRef}>
-                <button
-                  onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2"
-                >
-                  <div className="w-10 h-10 rounded-full bg-[#5B3FD8] text-white flex items-center justify-center font-semibold">
-                    Y
-                  </div>
+    <div className="hidden xl:block text-left">
+      <p className="text-sm font-semibold">Yaduvansh</p>
+      <p className="text-xs text-gray-500">Merchant Admin</p>
+    </div>
+  </button>
 
-                  <div className="hidden xl:block text-left">
-                    <p className="text-sm font-semibold">
-                      Yaduvansh
-                    </p>
+  {profileOpen && (
+    <div className="absolute right-0 mt-3 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 z-50">
+      <button
+        onClick={() => navigate("/profile")}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"
+      >
+        <User size={16} />
+        Profile
+      </button>
 
-                    <p className="text-xs text-gray-500">
-                      Merchant Admin
-                    </p>
-                  </div>
-                </button>
+      <button
+        onClick={() => navigate("/billing")}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"
+      >
+        <CreditCard size={16} />
+        Billing
+      </button>
 
-                {profileOpen && (
-                  <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-                    <div className="p-4 border-b border-gray-200">
-                      <p className="font-semibold">
-                        Yaduvansh
-                      </p>
+      <button
+        onClick={() => navigate("/logout")}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-red-600"
+      >
+        <LogOut size={16} />
+        Logout
+      </button>
+    </div>
+  )}
+</div>
 
-                      <p className="text-sm text-gray-500">
-                        Merchant Admin
-                      </p>
-                    </div>
-
-                    <NavLink
-                      to="/profile"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
-                    >
-                      <User size={18} />
-                      Profile
-                    </NavLink>
-
-                    <NavLink
-                      to="/preferences"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
-                    >
-                      <Settings size={18} />
-                      Preferences
-                    </NavLink>
-
-                    <NavLink
-                      to="/billing"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50"
-                    >
-                      <CreditCard size={18} />
-                      Billing
-                    </NavLink>
-
-                    <NavLink
-                      to="/logout"
-                      onClick={() => setProfileOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-red-600"
-                    >
-                      <LogOut size={18} />
-                      Logout
-                    </NavLink>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile */}
-
+              {/* Mobile Menu */}
               <button
-                onClick={() => setMobileMenu(!mobileMenu)}
+                onClick={() => setMobileMenu((prev) => !prev)}
                 className="lg:hidden w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
               >
                 {mobileMenu ? <X size={18} /> : <Menu size={18} />}
               </button>
-
             </div>
           </div>
 
           {/* Mobile Navigation */}
-
           {mobileMenu && (
             <div className="lg:hidden mt-3 bg-white rounded-2xl shadow-md border border-gray-200 p-3 space-y-1">
               {menu.map((item) => {
@@ -390,11 +315,16 @@ export default function Layout({ children }) {
         </div>
       </header>
 
-      {/* Main Content */}
-
-      <main className="max-w-[1800px] mx-auto px-6 pt-8 pb-8">
-        {children}
+      {/* Page Content */}
+      <main className="max-w-[1720px] mx-auto px-6 lg:px-8 xl:px-10 pt-8 pb-10">
+        <Outlet />
       </main>
+
+      {/* Right-side Copilot */}
+      <CopilotPanel
+        open={copilotOpen}
+        onClose={() => setCopilotOpen(false)}
+      />
     </div>
   );
 }
