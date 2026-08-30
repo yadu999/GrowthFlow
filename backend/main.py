@@ -23,6 +23,7 @@ from upsell_service import recommend_addons
 from bundle_service import create_bundle_checkout
 from razorpay_service import create_order, verify_signature
 from fastapi import HTTPException
+from audit import log_action, get_logs
 
 app = FastAPI(
     title="GrowthFlow AI",
@@ -271,9 +272,8 @@ def analyze(data: dict):
 # Merchant Copilot
 # -----------------------------------
 
-@app.post("/copilot")
-def copilot(data: dict):
-
+@app.post("/copilot/chat")
+def copilot_chat(data: dict):
     question = data.get("question", "").strip()
 
     if not question:
@@ -284,7 +284,29 @@ def copilot(data: dict):
             )
         }
 
-    return ask_copilot(question)
+    try:
+        result = ask_copilot(question)
+
+        # Ensure the frontend always receives {"answer": "..."}
+        if isinstance(result, dict):
+            if "answer" in result:
+                return {"answer": result["answer"]}
+            if "response" in result:
+                return {"answer": result["response"]}
+
+        return {"answer": str(result)}
+
+    except Exception as e:
+        print("Copilot Error:", e)
+        return {
+            "answer": "Merchant Copilot is temporarily unavailable. Please try again in a moment."
+        }
+
+
+# Backward compatibility for older frontend calls
+@app.post("/copilot")
+def copilot(data: dict):
+    return copilot_chat(data)
 
 # -----------------------------------
 # Campaign Orchestrator (Phase 4)
@@ -432,18 +454,64 @@ def razorpay_verify(data: dict):
             detail="Invalid payment signature"
         )
 
+@app.get("/audit/logs")
+def audit_logs():
+      return get_logs()
+
 # -----------------------------------
 # Dashboard WebSocket
 # -----------------------------------
 
 @app.websocket("/ws/dashboard")
-async def websocket_dashboard(websocket: WebSocket):
+async def dashboard_ws(websocket: WebSocket):
+    await websocket.accept()
 
-    await manager.connect(websocket)
+    db = SessionLocal()
+    last_customer_id = None
 
     try:
         while True:
-            await websocket.receive_text()
+            recovered = db.query(Customer).filter(
+                Customer.status == "Recovered"
+            ).count()
+
+            abandoned = db.query(Customer).filter(
+                Customer.status == "Abandoned"
+            ).count()
+
+            await websocket.send_json({
+                "type": "dashboard",
+                "metrics": {
+                    "revenue": recovered * 4000,
+                    "conversion": 64,
+                    "abandoned": abandoned,
+                    "recovery_rate": 38,
+                },
+            })
+
+            customer = (
+                db.query(Customer)
+                .order_by(Customer.created_at.desc())
+                .first()
+            )
+
+            if customer and customer.id != last_customer_id:
+                last_customer_id = customer.id
+
+                await websocket.send_json({
+                    "type": "new_customer",
+                    "customer": {
+                        "id": customer.customer_id,
+                        "name": customer.name,
+                        "cart_value": customer.cart_value,
+                        "status": customer.status,
+                    },
+                })
+
+            await asyncio.sleep(3)
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        print("Dashboard WebSocket disconnected")
+
+    finally:
+        db.close()

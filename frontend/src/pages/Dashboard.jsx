@@ -45,7 +45,7 @@ export default function Dashboard() {
   /* ---------------- Copilot Toggle ---------------- */
 
   useEffect(() => {
-    const toggle = () => setCopilotOpen((p) => !p);
+    const toggle = (e) => setCopilotOpen(e.detail?.open ?? false);
 
     window.addEventListener("toggle-copilot", toggle);
 
@@ -97,36 +97,68 @@ export default function Dashboard() {
 
   /* ---------------- WebSocket Live Updates ---------------- */
 
-  useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8000/ws/dashboard");
+useEffect(() => {
+  let socket = null;
+  let reconnectTimer = null;
+  let intentionallyClosed = false;
+
+  const connect = () => {
+    socket = new WebSocket("ws://127.0.0.1:8000/ws/dashboard");
 
     socket.onopen = () => {
-      socket.send("connected");
+      console.log("Dashboard WebSocket connected");
     };
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === "new_customer") {
-        setLiveCustomers((prev) => [data.customer, ...prev]);
+      if (data.type === "dashboard") {
+        setMetrics(data.metrics);
+        return;
+      }
 
-        setMetrics((prev) => ({
-          ...prev,
-          abandoned: prev.abandoned + 1,
-        }));
+      if (data.type === "new_customer") {
+        setLiveCustomers((prev) => {
+          const exists = prev.some((c) => c.id === data.customer.id);
+
+          if (exists) return prev;
+
+          return [data.customer, ...prev].slice(0, 20);
+        });
 
         toast.success(
-          `New customer: ${data.customer.name} • ₹${data.customer.cart_value.toLocaleString("en-IN")}`
+          `New customer: ${data.customer.name} • ₹${Number(
+            data.customer.cart_value
+          ).toLocaleString("en-IN")}`
         );
       }
     };
 
-    socket.onclose = () => {
-      console.log("WebSocket disconnected");
+    socket.onerror = () => {
+      console.log("WebSocket error");
     };
 
-    return () => socket.close();
-  }, []);
+    socket.onclose = () => {
+      if (!intentionallyClosed) {
+        console.log("WebSocket disconnected. Reconnecting...");
+        reconnectTimer = setTimeout(connect, 3000);
+      }
+    };
+  };
+
+  connect();
+
+  return () => {
+    intentionallyClosed = true;
+
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.close(1000, "Dashboard closed");
+    }
+  };
+}, []);
+ 
 
   const nextCustomer = () => {
     setIndex((prev) => (prev + 1) % customers.length);
@@ -223,7 +255,7 @@ export default function Dashboard() {
   };
 
   return (
-    
+    <>
       <div className="space-y-10">
 
                 {/* ---------------- HERO ---------------- */}
@@ -498,23 +530,22 @@ export default function Dashboard() {
         </section>
 
       </div>
-  );
-            {/* ---------------- FLOATING COPILOT ---------------- */}
-{copilotOpen && (
-  <>
-    {/* Backdrop */}
-    <div
-      className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40"
-      onClick={() => setCopilotOpen(false)}
-    />
 
-    {/* Right Sidebar */}
-    <div className="fixed top-20 right-6 bottom-6 w-[420px] max-w-[calc(100vw-32px)] z-50 animate-in slide-in-from-right duration-300">
-      <CopilotPanel onClose={() => setCopilotOpen(false)} />
-    </div>
-  </>
-)}
-    
-  
+      {copilotOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/20 backdrop-blur-[2px] z-40"
+            onClick={() => setCopilotOpen(false)}
+          />
+
+          <div className="fixed top-20 right-6 bottom-6 w-[420px] max-w-[calc(100vw-32px)] z-50">
+            <CopilotPanel
+              open={copilotOpen}
+              onClose={() => setCopilotOpen(false)}
+            />
+          </div>
+        </>
+      )}
+    </>
+  );
 }
-    
