@@ -53,7 +53,7 @@ export default function CopilotPanel({ open, onClose }) {
         {
           role: "assistant",
           title: "Merchant Insight",
-          answer: data.answer || data.response || "No response received.",
+          answer: data.answer || "No response received.",
         },
       ]);
     } catch (err) {
@@ -168,9 +168,37 @@ export default function CopilotPanel({ open, onClose }) {
                       <span className="font-semibold">{msg.title}</span>
                     </div>
 
-                    <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
-                      {msg.answer}
-                    </p>
+                    <div
+  className={`rounded-xl p-4 ${
+    msg.answer.includes("Offline Intelligence Mode") ||
+    msg.answer.includes("temporarily unavailable")
+      ? "bg-amber-50 border border-amber-200"
+      : "bg-transparent"
+  }`}
+>
+  {(msg.answer.includes("Offline Intelligence Mode") ||
+    msg.answer.includes("temporarily unavailable")) && (
+    <div className="flex items-center gap-2 text-amber-700 mb-2">
+      <span className="w-2 h-2 rounded-full bg-amber-500" />
+      <span className="text-sm font-semibold">
+        Offline Intelligence Mode
+      </span>
+    </div>
+  )}
+
+  <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+    {msg.answer}
+  </p>
+</div>
+
+{msg.answer.includes("Offline Intelligence Mode") && (
+  <button
+    onClick={askAI}
+    className="mt-3 text-sm text-[#5B3FD8] hover:underline"
+  >
+    Retry AI
+  </button>
+)}
 
                     <button
                       onClick={() => copyMessage(msg.answer)}

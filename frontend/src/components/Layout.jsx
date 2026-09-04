@@ -2,6 +2,7 @@ import { NavLink, useNavigate, Outlet } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import CommandPalette from "./CommandPalette";
 import CopilotPanel from "./CopilotPanel";
+import razorpayLogo from "../assets/razorpay-logo.png";
 
 import {
   LayoutDashboard,
@@ -15,9 +16,7 @@ import {
   CircleHelp,
   Menu,
   X,
-  FileText,
-  Keyboard,
-  User,          
+  User,
   CreditCard,
   LogOut,
 } from "lucide-react";
@@ -92,14 +91,21 @@ export default function Layout() {
         <div className="max-w-[1720px] mx-auto">
           <div className="bg-white rounded-2xl shadow-md border border-gray-200 px-6 py-3 flex items-center justify-between gap-6">
 
-            {/* Logo */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-[#5B3FD8] flex items-center justify-center text-white font-bold text-lg">
-                G
-              </div>
+            {/* Razorpay Logo */}
+            <div
+              className="flex items-center gap-3 shrink-0 cursor-pointer"
+              onClick={() => navigate("/")}
+            >
+              <img
+                src={razorpayLogo}
+                alt="Razorpay GrowthFlow AI"
+                className="h-14 w-auto object-contain bg-white rounded-md"
+              />
+
+              
             </div>
 
-            {/* Desktop Navigation */}
+            {/* Navigation */}
             <nav className="hidden lg:flex items-center bg-gray-100 rounded-full p-1 gap-1">
               {menu.map((item) => {
                 const Icon = item.icon;
@@ -145,7 +151,7 @@ export default function Layout() {
                 Operational
               </div>
 
-              {/* Copilot Button */}
+              {/* AI Copilot */}
               <button
                 onClick={toggleCopilot}
                 className={`w-10 h-10 rounded-full flex items-center justify-center transition ${
@@ -158,130 +164,129 @@ export default function Layout() {
               </button>
 
               {/* Notifications */}
-<div className="relative" ref={notificationRef}>
-  <button
-    onClick={() => setNotificationOpen((prev) => !prev)}
-    className="relative w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition"
-  >
-    <Bell size={18} className="text-gray-700" />
+              <div className="relative" ref={notificationRef}>
+                <button
+                  onClick={() => setNotificationOpen(!notificationOpen)}
+                  className="relative w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
+                >
+                  <Bell size={18} className="text-gray-700" />
 
-    {notificationCount > 0 && (
-      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
-        {notificationCount}
-      </span>
-    )}
-  </button>
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] flex items-center justify-center font-semibold">
+                      {notificationCount}
+                    </span>
+                  )}
+                </button>
 
-  {notificationOpen && (
-    <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-semibold">Notifications</h3>
-        <button
-          onClick={() => setNotificationCount(0)}
-          className="text-xs text-[#5B3FD8]"
-        >
-          Mark all read
-        </button>
-      </div>
+                {notificationOpen && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50">
+                    <h3 className="font-semibold mb-3">Notifications</h3>
 
-      <div className="space-y-3">
-        <div className="p-3 rounded-xl bg-gray-50">
-          <p className="font-medium text-sm">Recovery campaign launched</p>
-          <p className="text-xs text-gray-500">2 min ago</p>
-        </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="p-3 rounded-xl bg-gray-50">
+                        AI recovered a ₹4,999 cart.
+                      </div>
 
-        <div className="p-3 rounded-xl bg-gray-50">
-          <p className="font-medium text-sm">12 carts recovered</p>
-          <p className="text-xs text-gray-500">10 min ago</p>
-        </div>
+                      <div className="p-3 rounded-xl bg-gray-50">
+                        New Razorpay checkout generated.
+                      </div>
 
-        <div className="p-3 rounded-xl bg-gray-50">
-          <p className="font-medium text-sm">New AI bundle generated</p>
-          <p className="text-xs text-gray-500">25 min ago</p>
-        </div>
-      </div>
-    </div>
-  )}
-</div>
+                      <div className="p-3 rounded-xl bg-gray-50">
+                        Recovery campaign ready for approval.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Help */}
-<div className="relative hidden sm:block" ref={helpRef}>
-  <button
-    onClick={() => setHelpOpen((prev) => !prev)}
-    className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition"
-  >
-    <CircleHelp size={18} className="text-gray-700" />
-  </button>
+              <div className="relative hidden sm:block" ref={helpRef}>
+                <button
+                  onClick={() => setHelpOpen(!helpOpen)}
+                  className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center"
+                >
+                  <CircleHelp size={18} className="text-gray-700" />
+                </button>
 
-  {helpOpen && (
-    <div className="absolute right-0 mt-3 w-64 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 z-50">
-      <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
-        Documentation
-      </button>
+                {helpOpen && (
+                  <div className="absolute right-0 mt-3 w-64 bg-white border border-gray-200 rounded-2xl shadow-xl p-3 z-50">
+                    <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 text-sm">
+                      Documentation
+                    </button>
 
-      <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
-        Keyboard Shortcuts
-      </button>
+                    <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 text-sm">
+                      Keyboard Shortcuts
+                    </button>
 
-      <button className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100">
-        Contact Support
-      </button>
-    </div>
-  )}
-</div>
+                    <button className="w-full text-left px-3 py-2 rounded-xl hover:bg-gray-100 text-sm">
+                      Contact Support
+                    </button>
+                  </div>
+                )}
+              </div>
 
               {/* Profile */}
-<div className="relative" ref={profileRef}>
-  <button
-    onClick={() => setProfileOpen((prev) => !prev)}
-    className="flex items-center gap-2"
-  >
-    <div className="w-10 h-10 rounded-full bg-[#5B3FD8] text-white flex items-center justify-center font-semibold">
-      Y
-    </div>
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className="flex items-center gap-2"
+                >
+                  <div className="w-10 h-10 rounded-full bg-[#5B3FD8] text-white flex items-center justify-center font-semibold">
+                    Y
+                  </div>
 
-    <div className="hidden xl:block text-left">
-      <p className="text-sm font-semibold">Yaduvansh</p>
-      <p className="text-xs text-gray-500">Merchant Admin</p>
-    </div>
-  </button>
+                  <div className="hidden xl:block text-left">
+                    <p className="text-sm font-semibold">Yaduvansh</p>
+                    <p className="text-xs text-gray-500">Merchant Admin</p>
+                  </div>
+                </button>
 
-  {profileOpen && (
-    <div className="absolute right-0 mt-3 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 z-50">
-      <button
-        onClick={() => navigate("/profile")}
-        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"
-      >
-        <User size={16} />
-        Profile
-      </button>
+                {profileOpen && (
+                  <div className="absolute right-0 mt-3 w-56 bg-white border border-gray-200 rounded-2xl shadow-xl p-2 z-50">
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        navigate("/profile");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-100"
+                    >
+                      <User size={18} />
+                      Profile
+                    </button>
 
-      <button
-        onClick={() => navigate("/billing")}
-        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100"
-      >
-        <CreditCard size={16} />
-        Billing
-      </button>
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        navigate("/billing");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-100"
+                    >
+                      <CreditCard size={18} />
+                      Billing
+                    </button>
 
-      <button
-        onClick={() => navigate("/logout")}
-        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-red-600"
-      >
-        <LogOut size={16} />
-        Logout
-      </button>
-    </div>
-  )}
-</div>
+                    <button
+                      onClick={() => {
+                        setProfileOpen(false);
+                        navigate("/logout");
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-red-600 hover:bg-red-50"
+                    >
+                      <LogOut size={18} />
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
 
-              {/* Mobile Menu */}
+              {/* Mobile */}
               <button
-                onClick={() => setMobileMenu((prev) => !prev)}
+                onClick={() => setMobileMenu(!mobileMenu)}
                 className="lg:hidden w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center"
               >
                 {mobileMenu ? <X size={18} /> : <Menu size={18} />}
               </button>
+
             </div>
           </div>
 
@@ -315,12 +320,12 @@ export default function Layout() {
         </div>
       </header>
 
-      {/* Page Content */}
+      {/* Main Content */}
       <main className="max-w-[1720px] mx-auto px-6 lg:px-8 xl:px-10 pt-8 pb-10">
         <Outlet />
       </main>
 
-      {/* Right-side Copilot */}
+      {/* AI Copilot */}
       <CopilotPanel
         open={copilotOpen}
         onClose={() => setCopilotOpen(false)}

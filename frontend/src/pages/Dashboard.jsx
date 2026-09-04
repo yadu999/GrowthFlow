@@ -40,6 +40,8 @@ export default function Dashboard() {
     recovery_rate: 0,
   });
 
+  const [wsConnected, setWsConnected] = useState(false);
+
   const [liveCustomers, setLiveCustomers] = useState([]);
 
   /* ---------------- Copilot Toggle ---------------- */
@@ -97,64 +99,74 @@ export default function Dashboard() {
 
   /* ---------------- WebSocket Live Updates ---------------- */
 
+/* ---------------- WebSocket Live Updates ---------------- */
+
 useEffect(() => {
-  let socket = null;
+  let ws = null;
   let reconnectTimer = null;
-  let intentionallyClosed = false;
+  let mounted = true;
 
   const connect = () => {
-    socket = new WebSocket("ws://127.0.0.1:8000/ws/dashboard");
+    if (!mounted) return;
 
-    socket.onopen = () => {
-      console.log("Dashboard WebSocket connected");
+    ws = new WebSocket("ws://127.0.0.1:8000/ws/dashboard");
+
+    ws.onopen = () => {
+      if (!mounted) return;
+      console.log("WebSocket connected");
+      setWsConnected(true);
     };
 
-    socket.onmessage = (event) => {
+    ws.onmessage = (event) => {
+      if (!mounted) return;
+
       const data = JSON.parse(event.data);
 
       if (data.type === "dashboard") {
-        setMetrics(data.metrics);
-        return;
-      }
-
-      if (data.type === "new_customer") {
+        setMetrics({
+          revenue: data.metrics.revenue_today,
+          conversion: data.metrics.conversion_rate,
+          abandoned: data.metrics.abandoned_carts,
+          recovery_rate: data.metrics.recovery_rate,
+        });
+      } else if ("revenue_today" in data) {
+        setMetrics({
+          revenue: data.revenue_today,
+          conversion: data.conversion_rate,
+          abandoned: data.abandoned_carts,
+          recovery_rate: data.recovery_rate,
+        });
+      } else if (data.type === "new_customer") {
         setLiveCustomers((prev) => {
           const exists = prev.some((c) => c.id === data.customer.id);
-
-          if (exists) return prev;
-
-          return [data.customer, ...prev].slice(0, 20);
+          return exists ? prev : [data.customer, ...prev].slice(0, 20);
         });
-
-        toast.success(
-          `New customer: ${data.customer.name} • ₹${Number(
-            data.customer.cart_value
-          ).toLocaleString("en-IN")}`
-        );
       }
     };
 
-    socket.onerror = () => {
-      console.log("WebSocket error");
+    ws.onerror = (err) => {
+      console.log("WebSocket error", err);
+      // DON'T call ws.close() here.
     };
 
-    socket.onclose = () => {
-      if (!intentionallyClosed) {
-        console.log("WebSocket disconnected. Reconnecting...");
-        reconnectTimer = setTimeout(connect, 3000);
-      }
+    ws.onclose = () => {
+      if (!mounted) return;
+
+      setWsConnected(false);
+      console.log("WebSocket closed. Reconnecting...");
+
+      reconnectTimer = setTimeout(connect, 2000);
     };
   };
 
   connect();
 
   return () => {
-    intentionallyClosed = true;
+    mounted = false;
+    clearTimeout(reconnectTimer);
 
-    if (reconnectTimer) clearTimeout(reconnectTimer);
-
-    if (socket && socket.readyState === WebSocket.OPEN) {
-      socket.close(1000, "Dashboard closed");
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close(1000, "Component unmounted");
     }
   };
 }, []);
@@ -351,9 +363,13 @@ useEffect(() => {
                     WebSocket
                   </span>
 
-                  <span className="font-semibold text-green-600">
-                    Connected
-                  </span>
+                  <span
+  className={`font-semibold ${
+    wsConnected ? "text-green-600" : "text-red-500"
+  }`}
+>
+  {wsConnected ? "Connected" : "Disconnected"}
+</span>
                 </div>
 
               </div>

@@ -19,36 +19,50 @@ export default function RevenueChart() {
   // Fetch Revenue Data
   // ----------------------------
   useEffect(() => {
+    let cancelled = false;
+
     const loadRevenue = async () => {
       try {
-        const res = await fetch("http://localhost:8000/analytics/revenue");
+        const res = await fetch("http://127.0.0.1:8000/analytics/revenue");
 
         if (!res.ok) throw new Error("Failed to fetch revenue");
 
         const revenueData = await res.json();
-        setData(revenueData);
+
+        if (!cancelled) {
+          setData(revenueData);
+        }
       } catch (err) {
         console.error("Revenue fetch failed:", err);
 
-        // Fallback if backend has no data yet
-        setData([
-          { day: "Mon", revenue: 22000 },
-          { day: "Tue", revenue: 27000 },
-          { day: "Wed", revenue: 31000 },
-          { day: "Thu", revenue: 28000 },
-          { day: "Fri", revenue: 39000 },
-          { day: "Sat", revenue: 45000 },
-        ]);
+        if (!cancelled) {
+          // Fallback if backend has no data yet
+          setData([
+            { day: "Mon", revenue: 22000 },
+            { day: "Tue", revenue: 27000 },
+            { day: "Wed", revenue: 31000 },
+            { day: "Thu", revenue: 28000 },
+            { day: "Fri", revenue: 39000 },
+            { day: "Sat", revenue: 45000 },
+          ]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
+    // Initial fetch
     loadRevenue();
 
-    const interval = setInterval(loadRevenue, 5000);
+    // Refresh every 30 seconds
+    const interval = setInterval(loadRevenue, 30000);
 
-    return () => clearInterval(interval);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   // ----------------------------
@@ -89,7 +103,7 @@ export default function RevenueChart() {
 
   if (loading) {
     return (
-      <div className="h-[380px] flex items-center justify-center text-muted">
+      <div className="h-[380px] flex items-center justify-center text-gray-500">
         Loading revenue analytics...
       </div>
     );
@@ -98,21 +112,20 @@ export default function RevenueChart() {
   return (
     <section className="py-2">
       {/* Header */}
-
-      <div className="flex items-start justify-between pb-6 border-b border-border">
+      <div className="flex items-start justify-between pb-6 border-b border-gray-200">
         <div>
-          <p className="text-sm text-muted">Revenue Analytics</p>
+          <p className="text-sm text-gray-500">Revenue Analytics</p>
 
-          <h2 className="text-2xl font-semibold mt-1 text-text">
+          <h2 className="text-2xl font-semibold mt-1 text-gray-900">
             Live Revenue Trend
           </h2>
 
-          <p className="text-sm text-muted mt-2">
+          <p className="text-sm text-gray-500 mt-2">
             Real-time revenue performance from your MySQL database.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 text-success">
+        <div className="flex items-center gap-2 text-green-600">
           <TrendingUp size={18} />
           <span className="font-semibold">
             {growth.startsWith("-") ? growth : `+${growth}`}%
@@ -121,7 +134,6 @@ export default function RevenueChart() {
       </div>
 
       {/* Chart */}
-
       <div className="pt-6">
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={data}>
@@ -133,26 +145,26 @@ export default function RevenueChart() {
                 x2="0"
                 y2="1"
               >
-                <stop offset="0%" stopColor="#3B82F6" stopOpacity={0.22} />
-                <stop offset="100%" stopColor="#3B82F6" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="#5B3FD8" stopOpacity={0.25} />
+                <stop offset="100%" stopColor="#5B3FD8" stopOpacity={0.03} />
               </linearGradient>
             </defs>
 
             <CartesianGrid
-              stroke="rgba(148,163,184,0.12)"
+              stroke="#E5E7EB"
               strokeDasharray="3 3"
               vertical={false}
             />
 
             <XAxis
               dataKey="day"
-              stroke="#94A3B8"
+              stroke="#6B7280"
               tickLine={false}
               axisLine={false}
             />
 
             <YAxis
-              stroke="#94A3B8"
+              stroke="#6B7280"
               tickLine={false}
               axisLine={false}
               tickFormatter={(v) => `₹${Math.round(v / 1000)}k`}
@@ -160,14 +172,15 @@ export default function RevenueChart() {
 
             <Tooltip
               cursor={{
-                stroke: "#3B82F6",
+                stroke: "#5B3FD8",
                 strokeWidth: 1,
               }}
               contentStyle={{
-                background: "#161B26",
-                border: "1px solid rgba(255,255,255,.08)",
-                borderRadius: "10px",
-                color: "#F8FAFC",
+                background: "#FFFFFF",
+                border: "1px solid #E5E7EB",
+                borderRadius: "12px",
+                color: "#111827",
+                boxShadow: "0 8px 24px rgba(0,0,0,.08)",
               }}
               formatter={(value) => [
                 `₹${Number(value).toLocaleString("en-IN")}`,
@@ -185,18 +198,18 @@ export default function RevenueChart() {
             <Line
               type="monotone"
               dataKey="revenue"
-              stroke="#3B82F6"
+              stroke="#5B3FD8"
               strokeWidth={3}
               dot={{
                 r: 4,
-                fill: "#3B82F6",
-                stroke: "#0B0F17",
+                fill: "#5B3FD8",
+                stroke: "#FFFFFF",
                 strokeWidth: 2,
               }}
               activeDot={{
                 r: 6,
-                fill: "#3B82F6",
-                stroke: "#0B0F17",
+                fill: "#5B3FD8",
+                stroke: "#FFFFFF",
                 strokeWidth: 3,
               }}
             />
@@ -205,34 +218,33 @@ export default function RevenueChart() {
       </div>
 
       {/* Footer Stats */}
-
-      <div className="grid grid-cols-3 gap-6 pt-6 border-t border-border">
+      <div className="grid grid-cols-3 gap-6 pt-6 border-t border-gray-200">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted">
+          <p className="text-xs uppercase tracking-wide text-gray-500">
             Peak Revenue
           </p>
 
-          <p className="text-lg font-semibold text-text mt-1">
+          <p className="text-lg font-semibold text-gray-900 mt-1">
             ₹{Math.round(peak / 1000)}k
           </p>
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted">
+          <p className="text-xs uppercase tracking-wide text-gray-500">
             Average
           </p>
 
-          <p className="text-lg font-semibold text-text mt-1">
+          <p className="text-lg font-semibold text-gray-900 mt-1">
             ₹{Math.round(average / 1000)}k
           </p>
         </div>
 
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted">
+          <p className="text-xs uppercase tracking-wide text-gray-500">
             Best Day
           </p>
 
-          <p className="text-lg font-semibold text-text mt-1">
+          <p className="text-lg font-semibold text-gray-900 mt-1">
             {bestDay}
           </p>
         </div>
