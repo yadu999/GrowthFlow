@@ -4,7 +4,7 @@
 
 GrowthFlow AI is a modern full-stack commerce platform that helps merchants identify high-intent customers, recover abandoned carts, generate AI-powered campaigns, and create Razorpay checkouts through an intelligent merchant copilot.
 
-Built for the **Razorpay × Schneider Electric Hackathon**, GrowthFlow AI combines a premium enterprise dashboard with conversational AI, real-time analytics, and explainable decision-making workflows.
+Built for the Razorpay, GrowthFlow AI combines a premium enterprise dashboard with conversational AI, real-time analytics, and explainable decision-making workflows.
 
 ---
 
