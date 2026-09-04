@@ -7,40 +7,16 @@ from bundle_service import create_bundle_checkout
 def ask_copilot(question: str):
     """
     GrowthFlow AI Merchant Copilot
-    Executes business actions and replies in natural language.
+
+    Executes merchant actions and always responds in
+    natural conversational language.
     """
 
     q = question.lower()
 
-    # ------------------------------------
-    # Campaign Creation
-    # ------------------------------------
-    if "campaign" in q or "whatsapp campaign" in q:
-        campaign = create_campaign(
-            name="AI Recovery Campaign",
-            channel="WhatsApp",
-        )
-
-        return {
-            "answer": f"""I've prepared a WhatsApp recovery campaign for you.
-
-The campaign targets **{campaign['audience']} customers** who are most likely to complete their purchase if contacted now.
-
-**Campaign:** {campaign['name']}
-**Channel:** {campaign['channel']}
-
-**Message Preview**
-
-{campaign['message']}
-
-Based on recent customer behaviour, this campaign is expected to recover approximately **{campaign['predicted_recovery']}%** of eligible abandoned carts.
-
-The campaign is currently marked as **{campaign['status']}**, so you can review it before sending."""
-        }
-
-    # ------------------------------------
-    # Bundle Recommendation
-    # ------------------------------------
+    # --------------------------------------------------
+    # Bundle Generation
+    # --------------------------------------------------
     if "bundle" in q or "upsell" in q:
 
         if "lg" in q:
@@ -54,10 +30,10 @@ The campaign is currently marked as **{campaign['status']}**, so you can review 
 
         if not bundle:
             return {
-                "answer": "I couldn't generate a bundle for that product because it isn't available in the catalog yet."
+                "answer": "I couldn't generate a bundle because that product isn't available in the current catalog."
             }
 
-        recommendations = "\n".join(
+        items = "\n".join(
             f"• {item['name']} (₹{int(item['price'])}) — {item['reason']}"
             for item in bundle["recommendations"]
         )
@@ -65,62 +41,91 @@ The campaign is currently marked as **{campaign['status']}**, so you can review 
         return {
             "answer": f"""I've created a high-converting bundle for **{bundle['product']['name']}**.
 
-I'd recommend adding:
+Based on similar purchase behaviour, I'd recommend adding:
 
-{recommendations}
+{items}
 
-The original combined value is **₹{int(bundle['original_total'])}**.
+**Bundle Summary**
 
-After applying a **4% bundle discount**, the customer would pay **₹{int(bundle['grand_total'])}**.
+• Original value: ₹{int(bundle['original_total'])}
+• Bundle discount: ₹{int(bundle['discount'])}
+• Final total: ₹{int(bundle['grand_total'])}
 
-This combination is designed to increase average order value while keeping the recommendations relevant to the customer's purchase."""
+These products naturally complement the purchase and help increase average order value while improving the customer's overall buying experience."""
         }
 
-    # ------------------------------------
-    # Checkout Creation
-    # ------------------------------------
-    if "checkout" in q or "payment link" in q:
+    # --------------------------------------------------
+    # Campaign Creation
+    # --------------------------------------------------
+    if "campaign" in q or "whatsapp" in q:
 
-        if "lg" in q:
-            product = "LG OLED TV"
-        elif "redmi" in q:
-            product = "Redmi 4K Smart TV"
-        else:
-            product = "Samsung Smart TV"
-
-        checkout = create_bundle_checkout(
-            product_name=product,
-            customer="Merchant Demo",
+        campaign = create_campaign(
+            name="AI Recovery Campaign",
+            channel="WhatsApp",
         )
 
         return {
-            "answer": f"""I've created a Razorpay checkout for **{product}**.
+            "answer": f"""I've prepared a WhatsApp recovery campaign for your store.
 
-**Customer:** Merchant Demo
-**Amount:** ₹{int(checkout['amount'])}
+The campaign targets **{campaign['audience']} customers** who abandoned their carts and are most likely to convert if contacted now.
 
-The checkout session has been generated successfully and is currently waiting for payment confirmation.
+**Campaign Details**
 
-You can now open the payment page and complete the transaction securely through Razorpay."""
+• Name: {campaign['name']}
+• Channel: {campaign['channel']}
+• Expected recovery: approximately **{campaign['predicted_recovery']}%**
+
+**Message Preview**
+
+"{campaign['message']}"
+
+The campaign is currently marked as **{campaign['status']}**, so you can review it before sending."""
         }
 
-    # ------------------------------------
+    
+
+    # --------------------------------------------------
+    # Customer Behaviour
+    # --------------------------------------------------
+    if "abandon" in q or "cart" in q:
+
+        return {
+            "answer": """Today's abandoned carts appear to be concentrated around higher-value purchases, which usually indicates purchase hesitation rather than low intent.
+
+The quickest recovery strategy would be to target these shoppers within the next 30 minutes using a personalized WhatsApp reminder and a small incentive such as free shipping or a limited-time discount. These customers typically have a much higher chance of returning than users who left immediately after browsing."""
+        }
+
+    # --------------------------------------------------
+    # Revenue Suggestions
+    # --------------------------------------------------
+    if "revenue" in q or "increase sales" in q:
+
+        return {
+            "answer": """The fastest opportunities to increase revenue today are recovering abandoned carts, bundling complementary products during checkout, and targeting high-intent customers with personalized WhatsApp campaigns.
+
+Rather than offering discounts to everyone, I'd prioritize shoppers with larger cart values because they usually generate the strongest return on recovery campaigns."""
+        }
+
+    # --------------------------------------------------
     # General AI Assistant
-    # ------------------------------------
+    # --------------------------------------------------
     try:
         answer = ai_chat(
             f"""
 You are GrowthFlow AI Merchant Copilot.
 
-You help ecommerce merchants increase revenue, recover abandoned carts,
-improve conversions and explain customer behaviour.
+You help ecommerce merchants increase revenue.
 
-Merchant Question:
+Guidelines:
+- Reply naturally.
+- Be concise.
+- Explain recommendations.
+- Never return JSON.
+- Keep responses around 100 words.
+
+Merchant question:
+
 {question}
-
-Reply naturally in a conversational tone.
-Keep it concise (80–120 words).
-Avoid bullet points unless they improve clarity.
 """
         )
 
@@ -128,5 +133,7 @@ Avoid bullet points unless they improve clarity.
 
     except Exception:
         return {
-            "answer": "I'm temporarily operating in offline mode because the AI service is busy. I can still help with recovery strategies, bundle suggestions, and checkout guidance."
+            "answer": """I'm temporarily operating in offline mode because the AI service is busy.
+
+I can still provide recovery strategies, bundle recommendations, campaign ideas, and checkout guidance using GrowthFlow's built-in intelligence."""
         }

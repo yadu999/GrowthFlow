@@ -8,7 +8,6 @@ from groq.types.chat import ChatCompletionMessageParam
 load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
 MODEL = "openai/gpt-oss-20b"
 
 SYSTEM_PROMPT = """
@@ -60,6 +59,7 @@ chat_history: list[ChatCompletionMessageParam] = []
 def clean_json(text: str):
     """Extract valid JSON from AI response."""
     text = (text or "").strip()
+
     text = text.replace("```json", "").replace("```", "").strip()
 
     match = re.search(r"\{.*\}", text, re.DOTALL)
@@ -70,29 +70,71 @@ def clean_json(text: str):
     return json.loads(text)
 
 
-def ai_chat(
-    prompt: str,
-    system_message: str = "You are Merchant Copilot for GrowthFlow."
-) -> str:
-    """Reusable Groq wrapper."""
+# ------------------------------
+# Universal AI Chat (with graceful fallback)
+# ------------------------------
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        temperature=0.7,
-        max_tokens=900,
-        messages=[
-            {
-                "role": "system",
-                "content": system_message,
-            },
-            {
-                "role": "user",
-                "content": prompt,
-            },
-        ],
-    )
 
-    return (response.choices[0].message.content or "").strip()
+def ai_chat(prompt: str):
+    """
+    Primary AI function with graceful fallback.
+    Returns natural language even when Groq is unavailable.
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are GrowthFlow AI Merchant Copilot. "
+                        "Reply naturally, concisely and professionally."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+        )
+
+        return response.choices[0].message.content
+
+    except Exception as e:
+        print(f"AI Fallback Triggered: {e}")
+
+        lower = prompt.lower()
+
+        if "bundle" in lower:
+            return (
+                "Groq is temporarily unavailable, so I'm using GrowthFlow's "
+                "offline recommendation engine. I'd recommend pairing the "
+                "Samsung Smart TV with a Samsung Soundbar, Premium HDMI Cable "
+                "and Fire TV Stick because these products typically increase "
+                "average order value while improving the customer's setup experience."
+            )
+
+        if "campaign" in lower or "whatsapp" in lower:
+            return (
+                "Groq is temporarily unavailable, so I'm using an offline "
+                "recovery strategy. I recommend sending a WhatsApp reminder "
+                "within 30 minutes of cart abandonment with a small incentive "
+                "such as free shipping."
+            )
+
+        if "checkout" in lower:
+            return (
+                "The AI service is currently busy, but checkout guidance is "
+                "still available. You can safely generate a Razorpay Test Mode "
+                "checkout using GrowthFlow's built-in checkout flow."
+            )
+
+        return (
+            "Groq is temporarily unavailable, so GrowthFlow switched to "
+            "Offline Intelligence Mode. Revenue insights, bundle suggestions "
+            "and recovery strategies remain available while the AI reconnects."
+        )
 
 
 # ------------------------------
@@ -112,7 +154,8 @@ Coupon Used: {data['coupon_used']}
 """
 
     try:
-        return clean_json(ai_chat(prompt))
+        response = ai_chat(prompt)
+        return clean_json(response)
 
     except Exception as e:
         print("AI unavailable:", e)
@@ -131,23 +174,23 @@ Coupon Used: {data['coupon_used']}
                     "reasoning": [
                         f"Spent {time_spent // 60} minutes evaluating products.",
                         f"₹{cart:,} cart indicates strong buying intent.",
-                        "No coupon suggests price hesitation."
-                    ]
+                        "No coupon suggests price hesitation.",
+                    ],
                 },
                 "offer": {
                     "offer": "10% Discount",
-                    "why": "A limited-time discount removes hesitation while keeping recovery costs low."
+                    "why": "A limited-time discount removes hesitation while keeping recovery costs low.",
                 },
                 "recovery": {
                     "probability": 88,
-                    "priority": "High"
+                    "priority": "High",
                 },
                 "message": {
                     "message": (
                         f"Hey there! 👋 Your ₹{cart:,} order is still waiting. "
                         f"Save ₹{discount:,} today with code SAVE10 and complete your purchase."
                     )
-                }
+                },
             }
 
         elif time_spent >= 500:
@@ -158,20 +201,22 @@ Coupon Used: {data['coupon_used']}
                     "reasoning": [
                         "Long browsing session indicates strong interest.",
                         "Customer reached late-stage evaluation.",
-                        "Removing delivery friction may improve conversion."
-                    ]
+                        "Removing delivery friction may improve conversion.",
+                    ],
                 },
                 "offer": {
                     "offer": "Free Shipping",
-                    "why": "Free shipping often converts engaged shoppers without reducing product margins."
+                    "why": "Free shipping often converts engaged shoppers without reducing product margins.",
                 },
                 "recovery": {
                     "probability": 82,
-                    "priority": "Medium"
+                    "priority": "Medium",
                 },
                 "message": {
-                    "message": "You're almost there! 🚚 We've saved your cart—complete your purchase today and enjoy free shipping."
-                }
+                    "message": (
+                        "You're almost there! 🚚 We've saved your cart—complete your purchase today and enjoy free shipping."
+                    )
+                },
             }
 
         else:
@@ -181,20 +226,20 @@ Coupon Used: {data['coupon_used']}
                     "confidence": 74,
                     "reasoning": [
                         "Browsing behaviour without strong checkout signals.",
-                        "A reminder is more effective than immediate discounts."
-                    ]
+                        "A reminder is more effective than immediate discounts.",
+                    ],
                 },
                 "offer": {
                     "offer": "Cart Reminder",
-                    "why": "A gentle reminder preserves margins while encouraging the customer to return."
+                    "why": "A gentle reminder preserves margins while encouraging the customer to return.",
                 },
                 "recovery": {
                     "probability": 63,
-                    "priority": "Low"
+                    "priority": "Low",
                 },
                 "message": {
                     "message": "Your cart is waiting for you. Come back anytime—we'll keep everything ready."
-                }
+                },
             }
 
 
@@ -261,6 +306,15 @@ Use previous conversation whenever relevant.
     except Exception as e:
         print("Copilot Error:", e)
 
-        return {
-            "answer": "I'm unable to contact the AI service right now. Please check your Groq API key or internet connection."
-        }
+        fallback = ai_chat(question)
+
+        chat_history.append(
+            {
+                "role": "assistant",
+                "content": fallback,
+            }
+        )
+
+        chat_history = chat_history[-8:]
+
+        return {"answer": fallback}

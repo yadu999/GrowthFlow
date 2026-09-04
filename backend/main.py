@@ -465,53 +465,54 @@ def audit_logs():
 @app.websocket("/ws/dashboard")
 async def dashboard_ws(websocket: WebSocket):
     await websocket.accept()
-
-    db = SessionLocal()
-    last_customer_id = None
+    print("Dashboard WebSocket connected")
 
     try:
         while True:
-            recovered = db.query(Customer).filter(
-                Customer.status == "Recovered"
-            ).count()
+            db = SessionLocal()
 
-            abandoned = db.query(Customer).filter(
-                Customer.status == "Abandoned"
-            ).count()
+            try:
+                recovered = (
+                    db.query(Customer)
+                    .filter(Customer.status == "Recovered")
+                    .count()
+                )
 
-            await websocket.send_json({
-                "type": "dashboard",
-                "metrics": {
-                    "revenue": recovered * 4000,
-                    "conversion": 64,
-                    "abandoned": abandoned,
-                    "recovery_rate": 38,
-                },
-            })
+                abandoned = (
+                    db.query(Customer)
+                    .filter(Customer.status == "Abandoned")
+                    .count()
+                )
 
-            customer = (
-                db.query(Customer)
-                .order_by(Customer.created_at.desc())
-                .first()
-            )
+                total = db.query(Customer).count()
 
-            if customer and customer.id != last_customer_id:
-                last_customer_id = customer.id
+                conversion_rate = (
+                    round((recovered / total) * 100, 2)
+                    if total else 0
+                )
+
+                revenue = recovered * 4000
 
                 await websocket.send_json({
-                    "type": "new_customer",
-                    "customer": {
-                        "id": customer.customer_id,
-                        "name": customer.name,
-                        "cart_value": customer.cart_value,
-                        "status": customer.status,
-                    },
+                    "type": "dashboard",
+                    "metrics": {
+                        "revenue_today": revenue,
+                        "conversion_rate": conversion_rate,
+                        "abandoned_carts": abandoned,
+                        "recovery_rate": 38
+                    }
                 })
+
+            finally:
+                db.close()
 
             await asyncio.sleep(3)
 
     except WebSocketDisconnect:
-        print("Dashboard WebSocket disconnected")
+        print("Dashboard WebSocket disconnected normally.")
 
-    finally:
-        db.close()
+    except RuntimeError as e:
+        print("WebSocket closed:", e)
+
+    except Exception as e:
+        print("Dashboard WebSocket error:", repr(e))

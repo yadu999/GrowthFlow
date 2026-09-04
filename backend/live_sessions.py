@@ -3,6 +3,7 @@ import asyncio
 
 from database import SessionLocal
 from models import Customer
+import uuid
 
 products = [
     "Nike Air Max",
@@ -33,7 +34,7 @@ async def create_live_customer():
     try:
 
         customer = Customer(
-            customer_id=f"LIVE{random.randint(1000,9999)}",
+            customer_id=f"LIVE-{uuid.uuid4().hex[:8].upper()}",
             name=f"Live Customer {random.randint(1,999)}",
             email=f"live{random.randint(1,9999)}@demo.com",
             product=random.choice(products),
