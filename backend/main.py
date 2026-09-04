@@ -13,7 +13,7 @@ from database import SessionLocal
 from models import Customer, Prediction, RecoveryMessage, AuditLog
 from dashboard_service import get_dashboard
 from socket_manager import manager
-from live_sessions import create_live_customer
+from live_sessions import live_customer_generator
 from analytics_service import get_revenue_trend
 from product_service import search_products
 from checkout_service import create_checkout
@@ -55,7 +55,7 @@ async def live_engine():
         db = SessionLocal()
 
         try:
-            customer = await create_live_customer()
+            customer = await live_customer_generator()
 
             result = orchestrate({
                 "cart_value": customer.cart_value,
@@ -119,7 +119,7 @@ async def live_engine():
 
 @app.on_event("startup")
 async def startup_event():
-    asyncio.create_task(live_engine())
+    asyncio.create_task(live_customer_generator())
 
 # -----------------------------------
 # Home
@@ -465,54 +465,68 @@ def audit_logs():
 @app.websocket("/ws/dashboard")
 async def dashboard_ws(websocket: WebSocket):
     await websocket.accept()
-    print("Dashboard WebSocket connected")
+
+    last_customer_id = None
 
     try:
         while True:
             db = SessionLocal()
 
             try:
-                recovered = (
-                    db.query(Customer)
+                abandoned = db.query(Customer).filter(
+                    Customer.status == "Abandoned"
+                ).count()
+
+                recovered = db.query(Customer).filter(
+                    Customer.status == "Recovered"
+                ).count()
+
+                revenue = sum(
+                    row[0]
+                    for row in db.query(Customer.cart_value)
                     .filter(Customer.status == "Recovered")
-                    .count()
+                    .all()
                 )
 
-                abandoned = (
+                latest = (
                     db.query(Customer)
-                    .filter(Customer.status == "Abandoned")
-                    .count()
+                    .order_by(Customer.id.desc())
+                    .first()
                 )
 
-                total = db.query(Customer).count()
+                total = abandoned + recovered
+                conversion = round((recovered / total) * 100, 1) if total else 0
 
-                conversion_rate = (
-                    round((recovered / total) * 100, 2)
-                    if total else 0
-                )
+                payload = {
+                    "revenue": revenue,
+                    "conversion": conversion,
+                    "abandoned": abandoned,
+                    "recovery_rate": conversion,
+                }
 
-                revenue = recovered * 4000
-
-                await websocket.send_json({
-                    "type": "dashboard",
-                    "metrics": {
-                        "revenue_today": revenue,
-                        "conversion_rate": conversion_rate,
-                        "abandoned_carts": abandoned,
-                        "recovery_rate": 38
+                # Send customer ONLY when a new one appears
+                if latest and latest.id != last_customer_id:
+                    payload["latest_customer"] = {
+                        "id": latest.id,
+                        "name": latest.name,
+                        "product": latest.product,
+                        "cart_value": latest.cart_value,
+                        "device": latest.device,
+                        "payment": latest.payment,
+                        "coupon_used": bool(latest.coupon_used),
+                        "time_spent": latest.time_spent,
                     }
-                })
+                    last_customer_id = latest.id
+
+                await websocket.send_json(payload)
 
             finally:
                 db.close()
 
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
 
     except WebSocketDisconnect:
-        print("Dashboard WebSocket disconnected normally.")
-
-    except RuntimeError as e:
-        print("WebSocket closed:", e)
+        print("Dashboard client disconnected")
 
     except Exception as e:
-        print("Dashboard WebSocket error:", repr(e))
+        print("Dashboard WebSocket error:", e)

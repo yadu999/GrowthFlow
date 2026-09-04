@@ -1,56 +1,49 @@
-import random
 import asyncio
+import random
+import uuid
 
 from database import SessionLocal
 from models import Customer
-import uuid
 
-products = [
+
+PRODUCTS = [
     "Nike Air Max",
-    "Sony Headphones",
-    "Gaming Keyboard",
     "Apple Watch",
-    "Samsung TV",
+    "Samsung Smart TV",
+    "MacBook Air",
+    "Sony Headphones",
 ]
 
-devices = [
-    "iPhone",
-    "Android",
-    "Laptop",
-    "MacBook",
-]
-
-payments = [
-    "UPI",
-    "Credit Card",
-    "Wallet",
-]
+DEVICES = ["iPhone 15", "Android", "Windows Laptop", "MacBook"]
+PAYMENTS = ["UPI", "Card", "Net Banking"]
 
 
-async def create_live_customer():
+async def live_customer_generator():
+    while True:
+        db = SessionLocal()
 
-    db = SessionLocal()
+        try:
+            customer = Customer(
+                customer_id=f"LIVE-{uuid.uuid4().hex[:8].upper()}",
+                name=f"Live Customer {random.randint(1,999)}",
+                email=f"live{random.randint(1000,9999)}@demo.com",
+                product=random.choice(PRODUCTS),
+                cart_value=random.randint(1200, 8000),
+                device=random.choice(DEVICES),
+                payment=random.choice(PAYMENTS),
+                coupon_used=random.choice([0, 1]),
+                time_spent=random.randint(120, 900),
+                status=random.choice(["Abandoned", "Recovered"]),
+            )
 
-    try:
+            db.add(customer)
+            db.commit()
 
-        customer = Customer(
-            customer_id=f"LIVE-{uuid.uuid4().hex[:8].upper()}",
-            name=f"Live Customer {random.randint(1,999)}",
-            email=f"live{random.randint(1,9999)}@demo.com",
-            product=random.choice(products),
-            cart_value=random.randint(500,7000),
-            device=random.choice(devices),
-            payment=random.choice(payments),
-            coupon_used=random.choice([True, False]),
-            time_spent=random.randint(120,1200),
-            status="Abandoned",
-        )
+        except Exception as e:
+            db.rollback()
+            print("Live Engine Error:", e)
 
-        db.add(customer)
-        db.commit()
-        db.refresh(customer)
+        finally:
+            db.close()
 
-        return customer
-
-    finally:
-        db.close()
+        await asyncio.sleep(5)

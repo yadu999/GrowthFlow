@@ -102,58 +102,63 @@ export default function Dashboard() {
 /* ---------------- WebSocket Live Updates ---------------- */
 
 useEffect(() => {
-  let ws = null;
   let reconnectTimer = null;
-  let mounted = true;
+  let isMounted = true;
+  let socket = null;
 
   const connect = () => {
-    if (!mounted) return;
+    if (!isMounted) return;
 
-    ws = new WebSocket("ws://127.0.0.1:8000/ws/dashboard");
+    socket = new WebSocket("ws://127.0.0.1:8000/ws/dashboard");
 
-    ws.onopen = () => {
-      if (!mounted) return;
-      console.log("WebSocket connected");
+    socket.onopen = () => {
+      if (!isMounted) return;
+      console.log("Dashboard WebSocket connected");
       setWsConnected(true);
     };
 
-    ws.onmessage = (event) => {
-      if (!mounted) return;
+    socket.onmessage = (event) => {
+      if (!isMounted) return;
 
-      const data = JSON.parse(event.data);
+      try {
+        const data = JSON.parse(event.data);
 
-      if (data.type === "dashboard") {
+        // Update dashboard metrics
         setMetrics({
-          revenue: data.metrics.revenue_today,
-          conversion: data.metrics.conversion_rate,
-          abandoned: data.metrics.abandoned_carts,
-          recovery_rate: data.metrics.recovery_rate,
+          revenue: data.revenue ?? 0,
+          conversion: data.conversion ?? 0,
+          abandoned: data.abandoned ?? 0,
+          recovery_rate: data.recovery_rate ?? 0,
         });
-      } else if ("revenue_today" in data) {
-        setMetrics({
-          revenue: data.revenue_today,
-          conversion: data.conversion_rate,
-          abandoned: data.abandoned_carts,
-          recovery_rate: data.recovery_rate,
-        });
-      } else if (data.type === "new_customer") {
-        setLiveCustomers((prev) => {
-          const exists = prev.some((c) => c.id === data.customer.id);
-          return exists ? prev : [data.customer, ...prev].slice(0, 20);
-        });
+
+        // Update Incoming Customer card
+        if (data.latest_customer) {
+          setLiveCustomers((prev) => {
+            const customer = {
+              id: `${data.latest_customer.name}-${Date.now()}`,
+              ...data.latest_customer,
+            };
+
+            return [customer, ...prev].slice(0, 20);
+          });
+        }
+      } catch (err) {
+        console.error("WebSocket message error:", err);
       }
     };
 
-    ws.onerror = (err) => {
-      console.log("WebSocket error", err);
-      // DON'T call ws.close() here.
+    socket.onerror = (err) => {
+      console.error("WebSocket error:", err);
     };
 
-    ws.onclose = () => {
-      if (!mounted) return;
+    socket.onclose = (event) => {
+      if (!isMounted) return;
+
+      console.log(
+        `WebSocket closed (code ${event.code}). Reconnecting in 2s...`
+      );
 
       setWsConnected(false);
-      console.log("WebSocket closed. Reconnecting...");
 
       reconnectTimer = setTimeout(connect, 2000);
     };
@@ -162,11 +167,16 @@ useEffect(() => {
   connect();
 
   return () => {
-    mounted = false;
-    clearTimeout(reconnectTimer);
+    isMounted = false;
 
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.close(1000, "Component unmounted");
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+
+    if (
+      socket &&
+      (socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING)
+    ) {
+      socket.close(1000, "Component unmounted");
     }
   };
 }, []);
