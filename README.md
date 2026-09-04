@@ -551,3 +551,4 @@ Software Engineering Student
 
 This project is intended for educational, research, and portfolio purposes.
 
+Built for the **Razorpay × Schneider Electric Hackathon**.
