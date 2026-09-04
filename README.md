@@ -10,11 +10,11 @@ Built for the **Razorpay × Schneider Electric Hackathon**, GrowthFlow AI combin
 
 ## Dashboard Preview
 
-> Replace these placeholders with your actual screenshots before submitting.
 
-| Dashboard | AI Copilot |
-|-----------|------------|
-| ![Dashboard](docs/dashboard.png) | ![Copilot](docs/copilot.png) |
+
+| Dashboard |
+|-----------|
+| ![Dashboard](docs/dashboard.png) |
 
 ---
 
@@ -551,4 +551,4 @@ Software Engineering Student
 
 This project is intended for educational, research, and portfolio purposes.
 
-Built for the **Razorpay × Schneider Electric Hackathon**.
+
