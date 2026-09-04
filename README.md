@@ -14,7 +14,7 @@ Built for the **Razorpay × Schneider Electric Hackathon**, GrowthFlow AI combin
 
 | Dashboard | AI Copilot |
 |-----------|------------|
-| ![Dashboard](docs/dashboard.png) | ![Copilot](docs/copilot.png) |
+| ![Dashboard](docs/dashboard.png) |
 
 ---
 
